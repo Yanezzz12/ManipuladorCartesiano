@@ -1,0 +1,11 @@
+Bosch dimensions
+318.2 mm
+358.2 mm
+
+
+Diámetro Varilla: 8 mm
+
+Pendientes de diseño:
+>> Mejorar soporte para motor NEMA
+>> Sujeción soporte NEMA a perfil Bosch
+>> 
