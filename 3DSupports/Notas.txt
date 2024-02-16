@@ -1,0 +1,2 @@
+Screw Support Y2 es la base del motor NEMA, diseñar primero ese archivo
+Después Screw Support Y1 en función a las medidas adquiridas del diseño anterior

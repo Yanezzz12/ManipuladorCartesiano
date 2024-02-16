@@ -1,8 +1,0 @@
-NOMENCLATURA PIEZAS
-
-
-Función_ID_PiezaBase
-
-
-
-Las piezas en color verde son impresas en 3D

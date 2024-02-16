@@ -1,0 +1,21 @@
+Bosch dimensions
+318.2 mm
+358.2 mm
+
+6.5 mm hueco de perfil Bosch
+
+
+Diámetro Varilla: 8 mm
+
+Pendientes de diseño:
+>> Mejorar soporte para motor NEMA
+>> Sujeción soporte NEMA a perfil Bosch
+>> 
+
+
+Tornillos
+	[in]	[mm]
+	1/4	6.35
+	3/8	9.525	
+	1/2	12.7	
+	3/4 	19.05	X
