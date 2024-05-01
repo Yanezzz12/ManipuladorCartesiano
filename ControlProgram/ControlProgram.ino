@@ -2,7 +2,7 @@
 //#include <ros.h>
 
 //Variable declaration
-int delayTime = 1000;
+int frequencyDelayTime = 1000;
 const int frequency = 500; //Value in [Hz]
 
 //Axis X, motor 1
@@ -27,12 +27,9 @@ const int CSX;
 const int CSY;
 const int CSZ;
 
-//Max torque step (Positive direction)
-
-
 void setup() 
 {
-  Serial.begin(9600); //Check this value!
+  Serial.begin(9600); //Check this value!         **************
 
   //Motor pins
   pinMode(stepX1, OUTPUT);
@@ -50,10 +47,11 @@ void setup()
   pinMode(CSZ, INPUT);
 
   //Frequency delay time
-  delayTime = 1000 / frequency;
+  frequencyDelayTime = 1000 / frequency;
 }
 
-void RotateMotor(int dirPin, int motorPin, int steps, char direction)
+//Do NOT move axis X with this function
+void MoveMotor(int dirPin, int motorPin, int steps, char direction)
 {
   if(direction == '+')
   {
@@ -61,11 +59,11 @@ void RotateMotor(int dirPin, int motorPin, int steps, char direction)
     for(int x = 0; x < steps; x++) 
     {
       digitalWrite(motorPin, HIGH); 
-      delayMicroseconds(500); 
+      delayMicroseconds(frequencyDelayTime);      //**********
       digitalWrite(motorPin, LOW); 
-      delayMicroseconds(500); 
+      delayMicroseconds(frequencyDelayTime); 
     }
-    delay(delayTime);
+    delay(500);
   }
   else if(direction == '-')
   {
@@ -73,11 +71,11 @@ void RotateMotor(int dirPin, int motorPin, int steps, char direction)
     for(int x = 0; x < steps; x++) 
     {
       digitalWrite(motorPin, HIGH); 
-      delayMicroseconds(500); 
+      delayMicroseconds(frequencyDelayTime); 
       digitalWrite(motorPin, LOW); 
-      delayMicroseconds(500); 
+      delayMicroseconds(frequencyDelayTime); 
     }
-    delay(delayTime);
+    delay(500);
   }
 }
 
@@ -90,9 +88,9 @@ int ReadContactSensor(int sensorPin)
 //Transforms distance in [m] to steps in the motor (IN: Distance, OUT: steps) 
 int TransformDistance(float distance)
 {
-  int revolutionSteps = 200;  //Check this information
-  float radiusPiece = 0.002f; //In meters [m]
-  float offset = 0.0f;        //In meters [m]
+  int revolutionSteps = 200;  //Check this information  *************
+  float radiusPiece = 0.002f; //In meters [m]           *************
+  float offset = 0.0f;        //In meters [m]           *************
 
   float revolutionDistance = (3.14159f * radiusPiece * 2) + offset;
   int steps = (distance * revolutionSteps) / revolutionDistance;
@@ -100,22 +98,72 @@ int TransformDistance(float distance)
   return steps;
 }
 
-void MoveAxisX(float distance)
+void MoveAxisX(int dirPinA, int dirPinB, int pinMotorA, int pinMotorB, float distance)  //Set boundaries      **********
 {
   int steps = TransformDistance(distance);
 
-  //We cannot use the RotateMotorFunction, how can we modify it?
+  //Change direction if necessary *************************
+  digitalWrite(dirPinA, HIGH); 
+  digitalWrite(dirPinB, LOW);
 
+  for(int x = 0; x < steps; x++) 
+  {
+    digitalWrite(pinMotorA, HIGH);
+    digitalWrite(pinMotorB, HIGH);
+    delayMicroseconds(frequencyDelayTime); 
+    digitalWrite(pinMotorA, LOW);
+    digitalWrite(pinMotorB, LOW);
+    delayMicroseconds(frequencyDelayTime); 
+  }
+  delay(500);
+}
 
+//Do NOT move axis X with this function
+void MoveAxisYZ(int dirPin, int pinMotorA, float distance)                              //Set boundaries      **********
+{
+  int steps = TransformDistance(distance);
 
+  
+}
 
+void currentPosition()    //How can we make this function
+{
+  Serial.println("In process!");
+}
+
+//Check function construction         ***********
+String commandStr;
+String command1;
+String command2;
+String command3;
+
+String ReadCommands()
+{ 
+  while (Serial.available() == 0) {} 
+  commandStr = Serial.readString();
+  commandStr.trim();  
+
+  command1 = "";
+  command2 = "";
+  command3 = "";
+
+  int wordCount = 0;
+  for(int i = 0; i < commandStr.length(); i++)
+  {
+    if(commandStr[i] == ',')      
+      wordCount++;
+    else if(wordCount == 0)
+      command1 += commandStr[i];
+    else if(wordCount == 1)
+      command2 += commandStr[i];
+    else if(wordCount == 2)
+      command3 += commandStr[i];
+  }
+  return command1, command2, command3;  
 }
 
 void loop() 
 {
-
-
-
 
 
 }
