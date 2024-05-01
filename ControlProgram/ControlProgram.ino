@@ -1,5 +1,4 @@
 //Libraries
-//#include <ros.h>
 
 //Variable declaration
 int frequencyDelayTime = 1000;
@@ -50,35 +49,6 @@ void setup()
   frequencyDelayTime = 1000 / frequency;
 }
 
-//Do NOT move axis X with this function
-void MoveMotor(int dirPin, int motorPin, int steps, char direction)
-{
-  if(direction == '+')
-  {
-    digitalWrite(dirPin, HIGH);
-    for(int x = 0; x < steps; x++) 
-    {
-      digitalWrite(motorPin, HIGH); 
-      delayMicroseconds(frequencyDelayTime);      //**********
-      digitalWrite(motorPin, LOW); 
-      delayMicroseconds(frequencyDelayTime); 
-    }
-    delay(500);
-  }
-  else if(direction == '-')
-  {
-    digitalWrite(dirPin, LOW);
-    for(int x = 0; x < steps; x++) 
-    {
-      digitalWrite(motorPin, HIGH); 
-      delayMicroseconds(frequencyDelayTime); 
-      digitalWrite(motorPin, LOW); 
-      delayMicroseconds(frequencyDelayTime); 
-    }
-    delay(500);
-  }
-}
-
 int ReadContactSensor(int sensorPin)
 {
   int state = digitalRead(sensorPin);
@@ -119,53 +89,77 @@ void MoveAxisX(int dirPinA, int dirPinB, int pinMotorA, int pinMotorB, float dis
 }
 
 //Do NOT move axis X with this function
-void MoveAxisYZ(int dirPin, int pinMotorA, float distance)                              //Set boundaries      **********
+void MoveAxisYZ(int dirPin, int motorPin, float distance, char direction)                //Set boundaries      **********
 {
   int steps = TransformDistance(distance);
 
-  
+  if(direction == '+')
+  {
+    digitalWrite(dirPin, HIGH);
+    for(int x = 0; x < steps; x++) 
+    {
+      digitalWrite(motorPin, HIGH); 
+      delayMicroseconds(frequencyDelayTime);      //**********
+      digitalWrite(motorPin, LOW); 
+      delayMicroseconds(frequencyDelayTime); 
+    }
+    delay(500);
+  }
+  else if(direction == '-')
+  {
+    digitalWrite(dirPin, LOW);
+    for(int x = 0; x < steps; x++) 
+    {
+      digitalWrite(motorPin, HIGH); 
+      delayMicroseconds(frequencyDelayTime); 
+      digitalWrite(motorPin, LOW); 
+      delayMicroseconds(frequencyDelayTime); 
+    }
+    delay(500);
+  }
 }
 
-void currentPosition()    //How can we make this function
+void MoveToOrigin() //How can we make this function       ****** If contact sensor gets pressed, axis location is equal to 0
+{
+  Serial.println("In process");
+}
+
+void currentPosition()    //How can we make this function       ****** It has to know the robot position in every moment
 {
   Serial.println("In process!");
 }
 
 //Check function construction         ***********
-String commandStr;
-String command1;
-String command2;
-String command3;
+float value1;
+float value2;
+float value3;
+float value4;
 
-String ReadCommands()
+float ReadCommands()
 { 
-  while (Serial.available() == 0) {} 
-  commandStr = Serial.readString();
-  commandStr.trim();  
-
-  command1 = "";
-  command2 = "";
-  command3 = "";
-
-  int wordCount = 0;
-  for(int i = 0; i < commandStr.length(); i++)
+  float value[4];
+  while (Serial.available() > 0) 
   {
-    if(commandStr[i] == ',')      
-      wordCount++;
-    else if(wordCount == 0)
-      command1 += commandStr[i];
-    else if(wordCount == 1)
-      command2 += commandStr[i];
-    else if(wordCount == 2)
-      command3 += commandStr[i];
+    value1 = Serial.readStringUntil(',').toFloat(); // writes in the string all the inputs till a comma
+    Serial.read(); 
+    
+    value2 = Serial.readStringUntil(',').toFloat();
+    Serial.read(); 
+    
+    value3 = Serial.readStringUntil(',').toFloat();
+    Serial.read();
+
+    value4 = Serial.readStringUntil('\n').toFloat(); // writes in the string all the inputs till the end of line character
   }
-  return command1, command2, command3;  
+  
+  return value1;
 }
 
 void loop() 
 {
 
 
+  Serial.println("Hi");
 }
 
 //Links
