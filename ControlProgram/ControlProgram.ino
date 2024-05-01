@@ -121,7 +121,20 @@ void MoveAxisYZ(int dirPin, int motorPin, float distance, char direction)       
 
 void MoveToOrigin() //How can we make this function       ****** If contact sensor gets pressed, axis location is equal to 0
 {
-  Serial.println("In process");
+  while(CSX != 1) 
+  {
+    //MoveAxisX(dirX1, dirX2, , , );
+  }
+  
+  while(CSY != 1) 
+  {
+    Serial.println("In process");
+  }
+
+  while(CSZ != 1) 
+  {
+    Serial.println("In process");
+  }
 }
 
 void currentPosition()    //How can we make this function       ****** It has to know the robot position in every moment
