@@ -2,11 +2,11 @@
 
 //Variable declaration
 int frequencyDelayTime = 1000;
-const int frequency = 500; //Value in [Hz]
+const int frequency = 10000; //Value in [Hz]
 
 //Axis X, motor 1
-const int stepX1;
-const int dirX1;
+const int stepX1 = 25;
+const int dirX1 = 23;
 
 //Axis X, motor 2
 const int stepX2;
@@ -28,7 +28,7 @@ const int CSZ;
 
 void setup() 
 {
-  Serial.begin(9600); //Check this value!         **************
+  Serial.begin(250000); //Check this value!         **************
 
   //Motor pins
   pinMode(stepX1, OUTPUT);
@@ -59,7 +59,7 @@ int ReadContactSensor(int sensorPin)
 int TransformDistance(float distance)
 {
   int revolutionSteps = 200;  //Check this information  *************
-  float radiusPiece = 0.002f; //In meters [m]           *************
+  float radiusPiece = 0.02f; //In meters [m]           *************
   float offset = 0.0f;        //In meters [m]           *************
 
   float revolutionDistance = (3.14159f * radiusPiece * 2) + offset;
@@ -99,9 +99,9 @@ void MoveAxisYZ(int dirPin, int motorPin, float distance, char direction)       
     for(int x = 0; x < steps; x++) 
     {
       digitalWrite(motorPin, HIGH); 
-      delayMicroseconds(frequencyDelayTime);      //**********
+      delayMicroseconds(frequencyDelayTime / 2);      //**********
       digitalWrite(motorPin, LOW); 
-      delayMicroseconds(frequencyDelayTime); 
+      delayMicroseconds(frequencyDelayTime / 2); 
     }
     delay(500);
   }
@@ -139,40 +139,54 @@ void MoveToOrigin() //How can we make this function       ****** If contact sens
 
 void currentPosition()    //How can we make this function       ****** It has to know the robot position in every moment
 {
+  float position[4]; 
+  float xPosition, yPosition, zPosition;
   Serial.println("In process!");
+
+
+
+  return xPosition, yPosition, zPosition;
+}
+
+String ReadCommand()
+{ 
+  String command;
+  
+  while(Serial.available() == 0) {}
+  command = Serial.readString();
+
+  return command;
 }
 
 //Check function construction         ***********
-float value1;
-float value2;
-float value3;
-float value4;
-
-float ReadCommands()
-{ 
-  float value[4];
-  while (Serial.available() > 0) 
-  {
-    value1 = Serial.readStringUntil(',').toFloat(); // writes in the string all the inputs till a comma
-    Serial.read(); 
-    
-    value2 = Serial.readStringUntil(',').toFloat();
-    Serial.read(); 
-    
-    value3 = Serial.readStringUntil(',').toFloat();
-    Serial.read();
-
-    value4 = Serial.readStringUntil('\n').toFloat(); // writes in the string all the inputs till the end of line character
-  }
+float DecomposeString(String cmd, int index)
+{
+  float value;
   
-  return value1;
+  return value;
+  /*
+  value1 = Serial.readStringUntil(',').toFloat();
+  Serial.read(); 
+    
+  value2 = Serial.readStringUntil(',').toFloat();
+  Serial.read(); 
+    
+  value3 = Serial.readStringUntil(',').toFloat();
+  Serial.read();
+
+  value4 = Serial.readStringUntil('\n').toFloat();
+  */
 }
+
 
 void loop() 
 {
+  //I am defining 1 cm of movement
+  MoveAxisYZ(dirX1, stepX1, 0.01, '+');
+  //Serial.println(ReadCommand());
+  Serial.println("I'm trying to move");
 
 
-  Serial.println("Hi");
 }
 
 //Links
