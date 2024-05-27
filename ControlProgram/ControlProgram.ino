@@ -9,16 +9,16 @@ const int stepX1 = 25;
 const int dirX1 = 23;
 
 //Axis X, motor 2
-const int stepX2;
-const int dirX2;
+const int stepX2 = 31;
+const int dirX2 = 33;
 
 //Axis Y motor
-const int stepY1;
-const int dirY1;
+const int stepY1 = 37;
+const int dirY1 = 39;
 
 //Axis Z motor
 const int stepZ1;
-const int dirZ1;
+const int dirZ1; 
 //(Creo que el motor sólo tiene dos entradas)
 
 //Contact sensors
