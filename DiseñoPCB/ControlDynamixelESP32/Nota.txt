@@ -1,0 +1,5 @@
+Notas importantes:
+>> Modelo: Dynamixel: AX-12A
+>> El pin de control del manipulador va al pin TX, en este caso está registrado como (35u)
+>> Link video: //https://www.youtube.com/watch?v=aYE_O_ZF2ac
+>> Repositorio: https://github.com/makertut/AX-12A-ESP8266
