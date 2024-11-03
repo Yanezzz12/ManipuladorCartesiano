@@ -1,0 +1,19 @@
+Requerimientos para el diseño
+>> Capacitores para controladores motores a pasos
+>> Conexión USB a ESP32 (Cuidar voltajes)
+>> Conexión correcta de ESP32 a pines Dynamixel
+>> Reguladores de voltaje
+>> Voltaje y conector para motores
+>> Disipadores
+>> Pines para micropasos
+>> Fusibles a partir de cálculos de corriente
+>> Espacios para conexiones no utilizadas
+>> Sensor de temperatura
+>> Switch para lógica dynamixel
+
+>> Calcular demanda de corriente de motores
+
+Después de terminar diseño
+>> Hacer maqueta del circuito
+>> Importante ver si el dynamixel funciona
+

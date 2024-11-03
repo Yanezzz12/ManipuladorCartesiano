@@ -1,0 +1,3 @@
+Funcionamiento A4988 para motores a pasos:
+https://www.luisllamas.es/motores-paso-paso-arduino-driver-a4988-drv8825/
+
