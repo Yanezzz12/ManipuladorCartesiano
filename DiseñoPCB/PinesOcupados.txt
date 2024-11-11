@@ -1,0 +1,23 @@
+Pines ocupados
+
+GPIO32 - Pulso motores de X
+GPIO33 - Dirección motores X
+
+GPIO23 - Pulso motor Y
+GPIO22 - Dirección motor Y
+
+GPIO21 - Pulso motor Z
+GPIO19 - Dirección Z
+
+GPIO25 - Enable motors
+
+GPIO26 - Sensores X
+GPIO27 - Sensores Y
+GPIO14 - Sensores Z
+
+
+
+NO usar GPIO0, GPIO2, GPIO12 o GPIO15
+
+
+https://uelectronics.com/producto/rve1v101m0607-capacitor-electrolitico-100uf-35v-smd/
