@@ -1,0 +1,1 @@
+Diseñar con insert threads en mente
