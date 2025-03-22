@@ -1,1 +1,1 @@
-![PlanoPrincipal](https://github.com/user-attachments/assets/2ecc7d89-9cc1-4d05-bbbf-11b1661e741e)
+![ManipulatorLastUpdate](https://github.com/user-attachments/assets/903cc457-35a4-4784-a7c8-a0e16f366d3a)
