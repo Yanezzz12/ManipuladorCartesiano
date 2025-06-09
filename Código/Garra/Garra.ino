@@ -26,7 +26,7 @@ Hardware utilizado:
 >> Dynamixel AX12A
 >> ESP32 (ESP-WROOM-32)
 
-Conexión pines del AX12A
+Conexión pines del AX12A:
 >> Pin VCC: 12V
 >> Pin Datos: Se conecta a terminal TX de ESP32
 >> Pin GND: Tierra común
