@@ -26,5 +26,8 @@ Hardware utilizado:
 >> Dynamixel AX12A
 >> ESP32 (ESP-WROOM-32)
 
-El motor se alimenta a 12V y se conecta al pin TX de la garra
+Conexión pines del AX12A
+>> Pin VCC: 12V
+>> Pin Datos: Se conecta a terminal TX de ESP32
+>> Pin GND: Tierra común
 */
