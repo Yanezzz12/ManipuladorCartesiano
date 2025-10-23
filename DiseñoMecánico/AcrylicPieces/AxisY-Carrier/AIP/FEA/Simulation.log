@@ -1,0 +1,27 @@
+﻿Study Cortante started: 23/10/2025, 02:08:38 p. m.
+Number of configurations: 1
+Default mesh: 7544 elements, 13121 nodes
+Solution time 2.2s
+Convergence rate: 23.5%
+Reached the total number of h refinements 
+Study Cortante finished: 23/10/2025, 02:08:41 p. m.
+Total time 0:00:03
+
+Study Cortante started: 23/10/2025, 02:42:41 p. m.
+Number of configurations: 1
+Default mesh: 7544 elements, 13121 nodes
+Solution time 1.5s
+Convergence rate: 23.5%
+Reached the total number of h refinements 
+Study Cortante finished: 23/10/2025, 02:42:43 p. m.
+Total time 0:00:02
+
+Study Cortante started: 23/10/2025, 02:51:40 p. m.
+Number of configurations: 1
+Default mesh: 7544 elements, 13121 nodes
+Solution time 1.7s
+Convergence rate: 24.2%
+Reached the total number of h refinements 
+Study Cortante finished: 23/10/2025, 02:51:42 p. m.
+Total time 0:00:02
+
