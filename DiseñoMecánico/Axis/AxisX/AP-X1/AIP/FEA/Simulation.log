@@ -1,9 +1,18 @@
-﻿Study Flexión started: 24/10/2025, 02:38:08 p. m.
+﻿Study Flexión started: 25/10/2025, 02:58:55 p. m.
 Number of configurations: 1
 Default mesh: 9974 elements, 19134 nodes
 Solution time 1.5s
 Convergence rate: 56.2%
 Reached the total number of h refinements 
-Study Flexión finished: 24/10/2025, 02:38:10 p. m.
+Study Flexión finished: 25/10/2025, 02:58:57 p. m.
+Total time 0:00:02
+
+Study Flexión started: 25/10/2025, 03:29:46 p. m.
+Number of configurations: 1
+Default mesh: 9974 elements, 19134 nodes
+Solution time 1.4s
+Convergence rate: 56.2%
+Reached the total number of h refinements 
+Study Flexión finished: 25/10/2025, 03:29:48 p. m.
 Total time 0:00:02
 
