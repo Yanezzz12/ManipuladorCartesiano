@@ -3,6 +3,7 @@
 //-----------------------------
 
 //#include "include/functions.c"
+//#include <AX12A.h>
 
 //-----------------------------
 //------------Setup------------
@@ -25,8 +26,11 @@
 #define pinSInd     103
 #define pinSDist    104
 // Pines adicionales
-#define pinServo    110
 #define pinParo     111
+// Pines servomotor
+#define pinServo    (35u)
+#define BaudRate    (1000000ul)
+#define ID          (1u)
 
 void setup()
 {
@@ -50,6 +54,10 @@ void setup()
   // Declaraciones adicionales
   pinMode(pinServo, OUTPUT);
   pinMode(pinStop, INPUT);
+  //Dynamixel setup
+  delay(1000);  // Time for Dynamixel to start on power-up
+  ax12a.begin(BaudRate, pinServo, &Serial);
+  ax12a.setEndless(ID, ON);
 }
 
 //-----------------------------
@@ -134,7 +142,7 @@ void MoveXYZ(float Sx, float Sy, float Sz)
   digitalWrite(pinMotEN, LOW);
 }
 
-void MoveToOrigin() 
+void GoToOrigin() 
 {
   // Enables motors
   digitalWrite(pinMotEN, HIGH);
@@ -177,9 +185,18 @@ void MoveToOrigin()
   digitalWrite(pinMotEN, LOW);
 }
 
-void MoveClaw()
+void MoveClaw(int action)
 {
-  Serial.println("Nothing yet");
+  if(action == 0)
+  {
+    ax12a.ledStatus(ID, ON);
+    ax12a.turn(ID, LEFT, 300); 
+  }
+  else if (action == 1)
+  {
+    ax12a.ledStatus(ID, OFF);
+    ax12a.turn(ID, RIGHT, 500);
+  }
 }
 
 //-----------------------------
@@ -198,6 +215,17 @@ void showSensors()
   Serial.println(digitalRead(pinSInd));
   Serial.print("Sensor distancia: "); 
   Serial.println(analogRead(pinSDist)); //Es un sensor analógico
+}
+
+void TestClaw()
+{
+  //Moves claw periodically
+  ax12a.ledStatus(ID, ON);
+  ax12a.turn(ID, LEFT, 300); 
+  delay(5000);
+  ax12a.ledStatus(ID, OFF);
+  ax12a.turn(ID, RIGHT, 500);
+  delay(5000);
 }
 
 void loop()
