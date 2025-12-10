@@ -28,6 +28,6 @@ Hardware utilizado:
 
 Conexión pines del AX12A:
 >> Pin VCC: 12V
->> Pin Datos: Se conecta a terminal TX de ESP32
+>> Pin Datos: Se conecta a terminal TX2 de ESP32
 >> Pin GND: Tierra común
 */
