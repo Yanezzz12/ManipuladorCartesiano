@@ -107,6 +107,10 @@ void MoveXYZ(float Sx, float Sy, float Sz)
   digitalWrite(pinMotEN, HIGH);
   while((xPos != xSteps * Smx) && (yPos != ySteps * Smy) && (zPos != zSteps * Smz)) // TODO: Check if better condition (I think it has to be OR, not AND)
   {
+    // Goals (Do I leave it like this? I have to declare it)
+    xGoal = xSteps * Smx;
+    yGoal = ySteps * Smy;
+    zGoal = zSteps * Smz;
     // If stop button is pressed loop breaks
     if(digitalRead(pinStop) == 0)
     { break; }
@@ -214,12 +218,12 @@ void showSensors()
   Serial.print("Sensor inductivo: ");
   Serial.println(digitalRead(pinSInd));
   Serial.print("Sensor distancia: "); 
-  Serial.println(analogRead(pinSDist)); //Es un sensor analógico
+  Serial.println(analogRead(pinSDist)); // Sensor analógico
 }
 
 void TestClaw()
 {
-  //Moves claw periodically
+  // Moves claw periodically
   ax12a.ledStatus(ID, ON);
   ax12a.turn(ID, LEFT, 300); 
   delay(5000);
