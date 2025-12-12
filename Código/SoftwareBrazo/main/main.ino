@@ -64,6 +64,15 @@ void setup()
 //----------Functions----------
 //-----------------------------
 
+/*TODO: 
+  ROS nodes
+  Capability for routines
+  Goto coords and move claw
+  IDLE function
+  code optimization (static variables)
+  error correction (re scan)
+  routine feedback, it has finished
+*/
 
 int positionControl(float x, float y, float z)
 {
