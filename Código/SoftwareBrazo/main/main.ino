@@ -73,18 +73,28 @@ int positionControl(float x, float y, float z)
   */
 }
 
-//TODO: We are not considering stop button and sensors, we have to.
+// TODO: We are not considering stop button and sensors, we have to.
 int freq = 1000;
 void MoveXYZ(float Sx, float Sy, float Sz)
 {
   // Variable declaration
-  float xPos = 0;
-  float yPos = 0;
-  float zPos = 0;
+  bool xDir = 0;
+  bool yDir = 0;
+  bool zDir = 0;
+  float xMov = 0.0;
+  float yMov = 0.0;
+  float zMov = 0.0;
+  float xGoal = 1.0;
+  float yGoal = 1.0;
+  float zGoal = 1.0;
+  // Defined physic limits of every axis
+  static float xLimit = 18.0;
+  static float yLimit = 22.0;
+  static float zLimit = 30.0;
   // Minimum distance per step
-  float Smx = 0.1885;
-  float Smy = 0.1885;
-  float Smz = 0.04;
+  static float Smx = 0.1885;
+  static float Smy = 0.1885;
+  static float Smz = 0.04;
   // Distance to steps conversion
   // TODO: Check conversion
   int xSteps = abs(Sx) / Smx;
@@ -92,30 +102,61 @@ void MoveXYZ(float Sx, float Sy, float Sz)
   int zSteps = abs(Sz) / Smz;
   // Defines direction
   if(Sx >= 0)
-  { digitalWrite(pinDirX1, HIGH); digitalWrite(pinDirX2, HIGH); }
+  { digitalWrite(pinDirX1, HIGH); digitalWrite(pinDirX2, HIGH); xDir = 1; } // Check xDir validity
   else
-  { digitalWrite(pinDirX1, LOW);  digitalWrite(pinDirX2, LOW);  }
+  { digitalWrite(pinDirX1, LOW);  digitalWrite(pinDirX2, LOW);  xDir = 0; }
   if(Sy >= 0)
-  { digitalWrite(pinDirY, HIGH); }
+  { digitalWrite(pinDirY, HIGH); yDir = 1;  } // Check yDir validity
   else
-  { digitalWrite(pinDirY, LOW);  }
+  { digitalWrite(pinDirY, LOW);  yDir = 0;  }
   if(Sz >= 0)
-  { digitalWrite(pinDirZ, HIGH); }
+  { digitalWrite(pinDirZ, HIGH); zDir = 1;  } // Chech zDir validity
   else
-  { digitalWrite(pinDirZ, LOW);  }
+  { digitalWrite(pinDirZ, LOW);  zDir = 0;  }
   // Stepper motors activate
   digitalWrite(pinMotEN, HIGH);
-  while((xPos != xSteps * Smx) && (yPos != ySteps * Smy) && (zPos != zSteps * Smz)) // TODO: Check if better condition (I think it has to be OR, not AND)
-  {
-    // Goals (Do I leave it like this? I have to declare it)
+  // Entering this loop allows movement
+  while(xCond || yCond || zCond) // Change to do while AND Do while conditions (3 conditions per variable?) (sensores y distancia)
+  { 
+    // If stop button is pressed loop breaks (break or return)
+    if(digitalRead(pinStop) == 0){ break; }
+    
+    // While goal not reached and sensor is not pressed
+    bool xCond = (xMov != xGoal) && (digitalRead(pinSX) == 1) && (xMov < xLimit); 
+    bool yCond = (yMov != yGoal) && (digitalRead(pinSY) == 1) && (yMov < yLimit);
+    bool zCond = (zMov != zGoal) && (digitalRead(pinSZ) == 1) && (zMov < zLimit);
+    
+    /*
+      Nota de determinación
+      No se puede mover hacia el origen si el sensor está presionado
+      Sí se puede mover en dirección contraria si el sensor está presionado
+
+      !mueve en dir=0 si digitalRead(pinSC) presionado
+      mueve en dir=1 si digitalRead(pinSC) presionado
+
+      //Determina dirección
+      if(Sx >= 0)
+      {dir = 1;}
+      else 
+      {dir = 0;}
+
+      Con Karnaugh obtenemos
+      S: Sensor
+      D: Direccion
+      M: Movimiento
+      M = S' + D
+      bool xAllowMov = !(digitalRead(pinSX) == 1) || (xDir)
+      bool yAllowMov = !(digitalRead(pinSY) == 1) || (yDir)
+      bool zAllowMov = !(digitalRead(pinSZ) == 1) || (zDir)
+    */
+
+
     xGoal = xSteps * Smx;
     yGoal = ySteps * Smy;
     zGoal = zSteps * Smz;
-    // If stop button is pressed loop breaks
-    if(digitalRead(pinStop) == 0)
-    { break; }
-
-    if(xPos != xSteps * Smx) //OR axis distance has been surpassed
+    
+    // Effector movement
+    if(xMov != xGoal)
     {
       digitalWrite(pinStepX1, HIGH);
       digitalWrite(pinStepX2, HIGH);
@@ -123,23 +164,23 @@ void MoveXYZ(float Sx, float Sy, float Sz)
       digitalWrite(pinStepX1, LOW);
       digitalWrite(pinStepX2, LOW);
       delayMicroseconds(freq);
-      xPos += Smx;
+      xMov += Smx;
     }
-    if(yPos != ySteps * Smy) //OR axis distance has been surpassed
+    if(yMov != yGoal)
     {
       digitalWrite(pinStepY, HIGH);
       delayMicroseconds(freq);
       digitalWrite(pinStepY, LOW); 
       delayMicroseconds(freq);
-      yPos += Smy;
+      yMov += Smy;
     }
-    if(zPos != zSteps * Smz) //OR axis distance has been surpassed
+    if(zMov != zGoal)
     {
       digitalWrite(pinStepZ, HIGH); 
       delayMicroseconds(freq);
       digitalWrite(pinStepZ, LOW); 
       delayMicroseconds(freq);
-      zPos += Smz;
+      zMov += Smz;
     }
   }
   // Stepper motors deactivate
@@ -191,15 +232,18 @@ void GoToOrigin()
 
 void MoveClaw(int action)
 {
+  static int open = 300;
+  static int close = 500;
+
   if(action == 0)
   {
     ax12a.ledStatus(ID, ON);
-    ax12a.turn(ID, LEFT, 300); 
+    ax12a.turn(ID, LEFT, open); 
   }
   else if (action == 1)
   {
     ax12a.ledStatus(ID, OFF);
-    ax12a.turn(ID, RIGHT, 500);
+    ax12a.turn(ID, RIGHT, close);
   }
 }
 
