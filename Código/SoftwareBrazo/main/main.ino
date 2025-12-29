@@ -31,7 +31,15 @@
 #define pinServo    (35u)
 #define BaudRate    (1000000ul)
 #define ID          (1u)
-
+// Defined physic limits of every axis
+static float xLimit = 18.0;
+static float yLimit = 22.0;
+static float zLimit = 30.0;
+// Global variables
+float xPosition = 0.0f;
+float yPosition = 0.0f;
+float zPosition = 0.0f;
+// Setup function
 void setup()
 {
   Serial.begin(115200);
@@ -72,14 +80,15 @@ void setup()
   code optimization (static variables)
   error correction (re scan)
   routine feedback, it has finished
+  Define correctly the supposed position of the system
+  Functions completed
+  >> 
 */
 
-int positionControl(float x, float y, float z)
+int MoveSystem(float x, float y, float z, int c)
 {
-  /*
-  MoveToOrigin();
-  MoveXYZ();
-  */
+  MoveXYZ(x, y, z);
+  //MoveClaw(c);
 }
 
 int freq = 1000;
@@ -98,10 +107,6 @@ void MoveXYZ(float Sx, float Sy, float Sz)
   float xGoal = 1.0;
   float yGoal = 1.0;
   float zGoal = 1.0;
-  // Defined physic limits of every axis
-  static float xLimit = 18.0;
-  static float yLimit = 22.0;
-  static float zLimit = 30.0;
   // Minimum distance per step
   static float Smx = 0.1885;
   static float Smy = 0.1885;
@@ -123,15 +128,14 @@ void MoveXYZ(float Sx, float Sy, float Sz)
   { digitalWrite(pinDirZ, HIGH); zDir = 1;  } // Chech zDir validity
   else
   { digitalWrite(pinDirZ, LOW);  zDir = 0;  }
-  // Stepper motors activate
+  // Stepper motors activate and enters loop to move
   digitalWrite(pinMotEN, HIGH);
-  // Entering this loop allows movement
-  do // Change to do while AND Do while conditions (3 conditions per variable?) (sensores y distancia)
+  do 
   { 
     // If stop button is pressed loop breaks (break or return)
     if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); break; } 
     // nDir = 1 siempre debe ser movimiento en sentido contrario del sensor
-    // nInterf == Movimiento no causa interferencia
+    // nInterf == Movimiento NO causa interferencia
     bool xInterf = !digitalRead(pinSX) || xDir;
     bool yInterf = !digitalRead(pinSY) || yDir;
     bool zInterf = !digitalRead(pinSZ) || zDir;
@@ -162,6 +166,10 @@ void MoveXYZ(float Sx, float Sy, float Sz)
       digitalWrite(pinStepX2, LOW);
       delayMicroseconds(freq);
       xMov += Smx;
+      if(xDir == 0)     //Revisar que la dirección es la correcta
+      { xPosition += Smx; } 
+      else 
+      { xPosition -= Smx; }
     }
     if(yCond)
     {
@@ -170,6 +178,10 @@ void MoveXYZ(float Sx, float Sy, float Sz)
       digitalWrite(pinStepY, LOW); 
       delayMicroseconds(freq);
       yMov += Smy;
+      if(yDir == 0)     //Revisar que la dirección es la correcta
+      { yPosition += Smy; }
+      else 
+      { yPosition -= Smy; }
     }
     if(zCond)
     {
@@ -178,6 +190,10 @@ void MoveXYZ(float Sx, float Sy, float Sz)
       digitalWrite(pinStepZ, LOW); 
       delayMicroseconds(freq);
       zMov += Smz;
+      if(zDir == 0)     //Revisar que la dirección es la correcta
+      { zPosition += Smz; }
+      else 
+      { zPosition -= Smz; }
     }
   }
   while(xCond || yCond || zCond);
@@ -185,7 +201,7 @@ void MoveXYZ(float Sx, float Sy, float Sz)
   digitalWrite(pinMotEN, LOW);
 }
 
-void GoToOrigin() 
+void GoToOrigin()
 {
   // Enables motors
   digitalWrite(pinMotEN, HIGH);
@@ -199,7 +215,8 @@ void GoToOrigin()
     delayMicroseconds(freq);
     digitalWrite(pinStepZ, LOW);
     delayMicroseconds(freq);
-  }
+  } 
+  zPosition = 0.0f;
   // Moves axis XY to origin
   while((digitalRead(pinSX != 0)) || (digitalRead(pinSY != 0))) 
   {
@@ -217,6 +234,8 @@ void GoToOrigin()
       digitalWrite(pinStepX2, LOW);
       delayMicroseconds(freq);
     }
+    else
+    { xPosition = 0.0f; } // Si el sensor del pinSx esta presionado
     digitalWrite(pinDirY, LOW);  
     if(digitalRead(pinSY != 0))
     {
@@ -225,8 +244,66 @@ void GoToOrigin()
       digitalWrite(pinStepY, LOW);
       delayMicroseconds(1000);
     }
+    else
+    { yPosition = 0.0f; } // Si el sensor del pinSx esta presionado
   }
   digitalWrite(pinMotEN, LOW);
+}
+
+void DetectBand(float yPos)
+{
+  // Static variables
+  static int scanFreq = 1000;
+  // Variable definition
+  int direction = 1; // Movimiento en sentido opuesto al sensor
+  
+  do 
+  {
+    // If stop button is pressed loop breaks (break or return)
+    if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); break; }
+
+    if(true)
+    {
+      digitalWrite(pinStepY, HIGH);
+      delayMicroseconds(scanFreq);
+      digitalWrite(pinStepY, LOW); 
+      delayMicroseconds(scanFreq);
+      if(direction )
+    }  
+  } 
+  while (yPosition < yLimit)
+
+  //TODO:
+  /*
+    Declarar limite en y
+    Función para detectar banda
+    Si no se detecta, repetir 2 veces más, (3 búsquedas en total)
+    Si nunca se detecta entonces el proceso no continúa
+    Si se detecta la banda, calcular centro y posicionarse
+  */
+  return;
+}
+
+void DetectCap(float xPos)
+{
+  // Static variables
+  static int scanFreq = 1000;
+
+  // If stop button is pressed loop breaks (break or return)
+  // if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); break; }
+
+
+
+  /*TODO:
+    Poner función de paro
+    Mover en dirección opuesta al sensor
+    Declarar limite en y
+    Función para detectar banda
+    Si no se detecta, repetir 2 veces más, (3 búsquedas en total)
+    Si nunca se detecta entonces el proceso no continúa
+    Si se detecta la tapa, calcular centro y posicionarse
+  */
+  return;
 }
 
 /*
@@ -250,6 +327,12 @@ void MoveClaw(int action)
 //-----------------------------
 //-------Debug Functions-------
 //-----------------------------
+
+int returnPosition()
+{
+  // Creo no se puede retornar varias cosas a la vez
+  return xPosition, yPosition, zPosition;
+}
 
 void showSensors()
 {
