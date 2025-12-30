@@ -35,6 +35,10 @@
 static float xLimit = 18.0;
 static float yLimit = 22.0;
 static float zLimit = 30.0;
+// Minimum distance per step
+static float Smx = 0.1885;
+static float Smy = 0.1885;
+static float Smz = 0.04;
 // Global variables
 float xPosition = 0.0f;
 float yPosition = 0.0f;
@@ -107,10 +111,6 @@ void MoveXYZ(float Sx, float Sy, float Sz)
   float xGoal = 1.0;
   float yGoal = 1.0;
   float zGoal = 1.0;
-  // Minimum distance per step
-  static float Smx = 0.1885;
-  static float Smy = 0.1885;
-  static float Smz = 0.04;
   // Distance to steps conversion
   int xSteps = abs(Sx) / Smx;
   int ySteps = abs(Sy) / Smy;
@@ -250,28 +250,45 @@ void GoToOrigin()
   digitalWrite(pinMotEN, LOW);
 }
 
-void DetectBand(float yPos)
+bool DetectBand(int scanCycles)
 {
   // Static variables
   static int scanFreq = 1000;
   // Variable definition
-  int direction = 1; // Movimiento en sentido opuesto al sensor
+  bool direction = 1; // Movimiento en sentido opuesto al sensor
+  int count = 0;
+  // MOVER A ORIGEN EN Y
   
+  // Activates motors and starts
+  digitalWrite(pinMotEN, HIGH);
+  digitalWrite(pinDirY, direction);
   do 
   {
     // If stop button is pressed loop breaks (break or return)
     if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); break; }
-
-    if(true)
-    {
-      digitalWrite(pinStepY, HIGH);
-      delayMicroseconds(scanFreq);
-      digitalWrite(pinStepY, LOW); 
-      delayMicroseconds(scanFreq);
-      if(direction )
-    }  
+    // Effector movement
+    digitalWrite(pinStepY, HIGH);
+    delayMicroseconds(scanFreq);
+    digitalWrite(pinStepY, LOW); 
+    delayMicroseconds(scanFreq);
+    // Updates position
+    if(direction == 1)
+    { yPosition += Smy; }
+    else
+    { yPosition -= Smy; }
+    // Oscilating behaviour 
+    if(digitalRead(pinSY) == HIGH) // Sensor físico Y presionado    
+    { direction = 1; count++; }
+    if(yPosition > yLimit)  
+    { direction = 0; count++; }
   } 
-  while (yPosition < yLimit)
+  while(count < scanCycles);
+  // Returns false if doesn't find band
+  if(count > scanCycles) //Check if this works
+  { return false; }
+  // Centrar el brazo a la banda en el eje y TODO
+  MoveXYZ(0, 1, 0);
+  return true;
 
   //TODO:
   /*
@@ -281,7 +298,6 @@ void DetectBand(float yPos)
     Si nunca se detecta entonces el proceso no continúa
     Si se detecta la banda, calcular centro y posicionarse
   */
-  return;
 }
 
 void DetectCap(float xPos)
