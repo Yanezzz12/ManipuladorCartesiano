@@ -173,10 +173,7 @@ void MoveXYZ(float Sx, float Sy, float Sz)
     }
     if(yCond)
     {
-      digitalWrite(pinStepY, HIGH);
-      delayMicroseconds(freq);
-      digitalWrite(pinStepY, LOW); 
-      delayMicroseconds(freq);
+      MoveStep(pinStepY, freq);
       yMov += Smy;
       if(yDir == 0)     //Revisar que la dirección es la correcta
       { yPosition += Smy; }
@@ -185,10 +182,7 @@ void MoveXYZ(float Sx, float Sy, float Sz)
     }
     if(zCond)
     {
-      digitalWrite(pinStepZ, HIGH); 
-      delayMicroseconds(freq);
-      digitalWrite(pinStepZ, LOW); 
-      delayMicroseconds(freq);
+      MoveStep(pinStepZ, freq);
       zMov += Smz;
       if(zDir == 0)     //Revisar que la dirección es la correcta
       { zPosition += Smz; }
@@ -201,31 +195,29 @@ void MoveXYZ(float Sx, float Sy, float Sz)
   digitalWrite(pinMotEN, LOW);
 }
 
-void GoToOrigin()
+void GoToOrigin(char axis = 'a')
 {
   // Enables motors
   digitalWrite(pinMotEN, HIGH);
-  // Moves axis Z to origin
+
+  // Z-Axis
   digitalWrite(pinDirZ, LOW);
-  while(digitalRead(pinSZ) != 0) 
+  while(digitalRead(pinSZ) != 0 && (axis == 'a' || axis == 'z'))
   {
-    // System pauses if pinParo is pressed
-    while(digitalRead(pinStop) == 0) { }
-    digitalWrite(pinStepZ, HIGH);
-    delayMicroseconds(freq);
-    digitalWrite(pinStepZ, LOW);
-    delayMicroseconds(freq);
+    while(digitalRead(pinStop) == 0) { }  // Pauses system //TODO: Check validity of sensor
+    MoveStep(pinStepZ, freq);             
   } 
-  zPosition = 0.0f;
-  // Moves axis XY to origin
+  if(digitalRead(pinSZ) == 1) // TODO: Check if sensor is active here
+  { zPosition = 0.0f; }
+
+  // XY-Axis
   while((digitalRead(pinSX != 0)) || (digitalRead(pinSY != 0))) 
   {
-    // If stop button is pressed system pauses
-    while(digitalRead(pinStop) == 0) { }
+    while(digitalRead(pinStop) == 0) { } // Pauses system //TODO: Check validity of sensor
     // Simultaneous movement to origin
     digitalWrite(pinDirX1, LOW);  
     digitalWrite(pinDirX2, HIGH);  
-    if(digitalRead(pinSX != 0))
+    if(digitalRead(pinSX != 0) && (axis == 'a' || axis == 'x'))
     {
       digitalWrite(pinStepX1, HIGH);
       digitalWrite(pinStepX2, HIGH);
@@ -233,32 +225,27 @@ void GoToOrigin()
       digitalWrite(pinStepX1, LOW);
       digitalWrite(pinStepX2, LOW);
       delayMicroseconds(freq);
-    }
-    else
-    { xPosition = 0.0f; } // Si el sensor del pinSx esta presionado
+    } 
     digitalWrite(pinDirY, LOW);  
-    if(digitalRead(pinSY != 0))
-    {
-      digitalWrite(pinStepY, HIGH);
-      delayMicroseconds(1000);
-      digitalWrite(pinStepY, LOW);
-      delayMicroseconds(1000);
-    }
-    else
-    { yPosition = 0.0f; } // Si el sensor del pinSx esta presionado
+    if(digitalRead(pinSY != 0) && (axis == 'a' || axis == 'y'))
+    { MoveStep(pinStepY, freq); }
   }
+  if(digitalRead(pinSX) == 1) // TODO: Check of sensor is active here
+  { xPosition = 0.0f; }
+  if(digitalRead(pinSY) == 1) // TODO: Check of sensor is active here
+  { yPosition = 0.0f; }
+
+  // Disables motors
   digitalWrite(pinMotEN, LOW);
 }
 
-bool DetectBand(int scanCycles)
+bool DetectBand(int scanCycles, int scanFrequency)
 {
-  // Static variables
-  static int scanFreq = 1000;
   // Variable definition
   bool direction = 1; // Movimiento en sentido opuesto al sensor
   int count = 0;
   // MOVER A ORIGEN EN Y
-  
+  GoToOrigin('y');
   // Activates motors and starts
   digitalWrite(pinMotEN, HIGH);
   digitalWrite(pinDirY, direction);
@@ -267,10 +254,7 @@ bool DetectBand(int scanCycles)
     // If stop button is pressed loop breaks (break or return)
     if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); break; }
     // Effector movement
-    digitalWrite(pinStepY, HIGH);
-    delayMicroseconds(scanFreq);
-    digitalWrite(pinStepY, LOW); 
-    delayMicroseconds(scanFreq);
+    MoveStep(pinStepY, scanFrequency);
     // Updates position
     if(direction == 1)
     { yPosition += Smy; }
@@ -300,7 +284,7 @@ bool DetectBand(int scanCycles)
   */
 }
 
-void DetectCap(float xPos)
+void DetectCap(float xPos) // TODO: Finish function
 {
   // Static variables
   static int scanFreq = 1000;
@@ -344,7 +328,16 @@ void MoveClaw(int action)
 //-------Debug Functions-------
 //-----------------------------
 
-int returnPosition()
+void MoveStep(int pinStepMotor, int frequency)
+{
+  digitalWrite(pinStepMotor, HIGH);
+  delayMicroseconds(frequency);
+  digitalWrite(pinStepMotor, LOW); 
+  delayMicroseconds(frequency);
+}
+      
+
+int returnPosition() // TODO: Hacer que se envíe una cadena
 {
   // Creo no se puede retornar varias cosas a la vez
   return xPosition, yPosition, zPosition;
@@ -376,7 +369,4 @@ void TestClaw()
   delay(5000);
 } */
 
-void loop()
-{
-
-}
+void loop(){}
