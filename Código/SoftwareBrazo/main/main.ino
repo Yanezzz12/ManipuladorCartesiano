@@ -47,7 +47,7 @@ float zPosition = 0.0f;
 void setup()
 {
   Serial.begin(115200);
-  // Declaración de motores
+  // Motors
   pinMode(pinStepX1, OUTPUT);
   pinMode(pinDirX1, OUTPUT);
   pinMode(pinStepX2, OUTPUT);
@@ -57,13 +57,13 @@ void setup()
   pinMode(pinStepZ, OUTPUT);
   pinMode(pinDirZ, OUTPUT);
   pinMode(pinMotEN, OUTPUT);
-  // Declaración de sensores
+  // Sensors
   pinMode(pinSX, INPUT);
   pinMode(pinSY, INPUT);
   pinMode(pinSZ, INPUT);
   pinMode(pinSInd, INPUT);
   pinMode(pinSDist, INPUT);
-  // Declaraciones adicionales
+  // Additional pins
   pinMode(pinServo, OUTPUT);
   pinMode(pinStop, INPUT);
   // Dynamixel setup
@@ -89,50 +89,159 @@ void setup()
   >> 
 */
 
-int freq = 1000;
-void goToOrigin(char axis = 'a')
-{
-  enableMotors(true);
+//-----------------------------
+//-------Debug Functions-------
+//-----------------------------
 
-  // Z-Axis // TODO: Define correct direction
-  digitalWrite(pinDirZ, LOW);
-  while((digitalRead(pinSZ) != 0) && (axis == 'a' || axis == 'z'))
+void printError(int numError)
+{
+  Serial.print("Error "); Serial.println(numError);
+}
+
+void enableMotors(bool enable) // TODO: Check if correct
+{ 
+  digitalWrite(pinMotEN, enable ? HIGH : LOW);
+}
+
+void setAxisDirection(char axis, bool againstOrigin) //TODO: Check directions
+{ 
+  switch(axis)
+  {
+    case 'x': 
+      digitalWrite(pinDirX1, againstOrigin);
+      digitalWrite(pinDirX2, !againstOrigin);
+      break;
+    case 'y': 
+      digitalWrite(pinDirY, againstOrigin);
+      break;
+    case 'z': 
+      digitalWrite(pinDirZ, againstOrigin);
+      break;
+    default:
+      Serial.println("Error 404");
+      break;
+  }
+}
+
+bool axisAtOrigin(char axis) //Check if correct
+{
+  switch (axis) 
+  {
+    case 'x': return !digitalRead(pinSX); break;
+    case 'y': return !digitalRead(pinSY); break;
+    case 'z': return !digitalRead(pinSZ); break;
+    default: printError(404);             break;
+  }
+}
+
+void generateStep(int pinStepMotor, int frequency)
+{
+  digitalWrite(pinStepMotor, HIGH);
+  delayMicroseconds(frequency);
+  digitalWrite(pinStepMotor, LOW); 
+  delayMicroseconds(frequency);
+}
+
+void waitOnStop() // TODO: Check if correct
+{ 
+  if(digitalRead(pinStop) == 0)
+  { 
+    enableMotors(false); 
+    while(digitalRead(pinStop) == 0) 
+    { delay(1); }
+    enableMotors(true);
+  }
+}
+
+bool exitOnStop() // TODO: Check if correct
+{ 
+  if(digitalRead(pinStop) == 0) 
+  { enableMotors(false); return true; }
+  return false;
+}
+
+void updatePosition(char axis, bool againstOrigin)
+{
+  switch (axis) 
+  {
+    case 'x': xPosition += againstOrigin ? Smx : -Smx; break;
+    case 'y': yPosition += againstOrigin ? Smy : -Smy; break;
+    case 'z': zPosition += againstOrigin ? Smz : -Smz; break;
+    default:  printError(403);                         break;
+  }
+}
+
+int returnPosition() // TODO: Hacer que se envíe una cadena
+{
+  return 1;
+}
+
+void showSensors()
+{
+  Serial.print("Sensor eje X: ");
+  Serial.println(digitalRead(pinSX));
+  Serial.print("Sensor eje Y: ");
+  Serial.println(digitalRead(pinSY));
+  Serial.print("Sensor eje Z: ");
+  Serial.println(digitalRead(pinSZ));
+  Serial.print("Sensor inductivo: ");
+  Serial.println(digitalRead(pinSInd));
+  Serial.print("Sensor distancia: "); 
+  Serial.println(analogRead(pinSDist)); // Sensor analógico
+}
+
+/*
+void testClaw()
+{
+  // Moves claw periodically
+  ax12a.ledStatus(ID, ON);
+  ax12a.turn(ID, LEFT, 300); 
+  delay(5000);
+  ax12a.ledStatus(ID, OFF);
+  ax12a.turn(ID, RIGHT, 500);
+  delay(5000);
+} */
+
+//-----------------------------
+//----------Functions----------
+//-----------------------------
+
+void goToOrigin(char axis = 'a', int originFrequency = 1000)
+{
+  bool xAxisSelected = axis == 'a' || axis == 'x';
+  bool yAxisSelected = axis == 'a' || axis == 'y';
+  bool zAxisSelected = axis == 'a' || axis == 'z';
+  enableMotors(true);
+  
+  setAxisDirection('z', 0);
+  while(!axisAtOrigin('z') && zAxisSelected)
   {
     waitOnStop();
-    generateStep(pinStepZ, freq);
+    generateStep(pinStepZ, originFrequency);
+    updatePosition('z', 0);
   } 
-  if(digitalRead(pinSZ) == 1) // TODO: Check if sensor is active here
-  { zPosition = 0.0f; }
+  if(axisAtOrigin('z')) { zPosition = 0.0f; }
 
   // XY-Axis
-  while((digitalRead(pinSX != 0)) || (digitalRead(pinSY != 0))) //Este bucle no terminará TODO!
+  while((!axisAtOrigin('x') && xAxisSelected) || (!axisAtOrigin('y') && yAxisSelected)) 
   {
     waitOnStop();
 
-    // X-Axis
-    digitalWrite(pinDirX1, LOW);  digitalWrite(pinDirX2, HIGH);  
-    if(digitalRead(pinSX != 0) && (axis == 'a' || axis == 'x'))
-    { generateStep(pinStepX1, freq); generateStep(pinStepX2, freq); } 
+    setAxisDirection('x', 0);
+    if(!axisAtOrigin('x') && xAxisSelected)
+    { generateStep(pinStepX1, originFrequency); generateStep(pinStepX2, originFrequency); updatePosition('x', 0); } 
 
-    // Y-Axis
-    digitalWrite(pinDirY, LOW);  
-    if(digitalRead(pinSY != 0) && (axis == 'a' || axis == 'y'))
-    { generateStep(pinStepY, freq); }
+    setAxisDirection('y', 0);
+    if(!axisAtOrigin('y') && yAxisSelected)
+    { generateStep(pinStepY, originFrequency); updatePosition('y', 0); }
   }
-  if(digitalRead(pinSX) == 1) // TODO: Check of sensor is active here
-  { xPosition = 0.0f; }
-  if(digitalRead(pinSY) == 1) // TODO: Check of sensor is active here
-  { yPosition = 0.0f; }
+  if(axisAtOrigin('x')) { xPosition = 0.0f; }
+  if(axisAtOrigin('y')) { yPosition = 0.0f; }
 
   enableMotors(false);
 }
 
-int moveSystem(float x, float y, float z, int c)
-{
-  moveXYZ(x, y, z);
-  //moveClaw(c);
-}
-
+int freq = 1000;
 void moveXYZ(float Sx, float Sy, float Sz)
 {
   // Variable declaration
@@ -154,32 +263,31 @@ void moveXYZ(float Sx, float Sy, float Sz)
   int zSteps = abs(Sz) / Smz;
   // Defines direction
   if(Sx >= 0)
-  { digitalWrite(pinDirX1, HIGH); digitalWrite(pinDirX2, HIGH); xDir = 1; } // Check xDir validity and check for compact solution
+  { setAxisDirection('x', 1); xDir = 1;   } 
   else
-  { digitalWrite(pinDirX1, LOW);  digitalWrite(pinDirX2, LOW);  xDir = 0; }
+  { setAxisDirection('x', 0);  xDir = 0;  }
   if(Sy >= 0)
-  { digitalWrite(pinDirY, HIGH); yDir = 1;  } // Check yDir validity
+  { setAxisDirection('y', 1); yDir = 1;   } 
   else
-  { digitalWrite(pinDirY, LOW);  yDir = 0;  }
+  { setAxisDirection('y', 0);  yDir = 0;  }
   if(Sz >= 0)
-  { digitalWrite(pinDirZ, HIGH); zDir = 1;  } // Chech zDir validity
+  { setAxisDirection('z', 1); zDir = 1;   } 
   else
-  { digitalWrite(pinDirZ, LOW);  zDir = 0;  }
+  { setAxisDirection('z', 0);  zDir = 0;  }
   
   enableMotors(true);
   do 
   { 
     // If stop button is pressed loop breaks 
-    if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); return; } 
-    // nDir = 1 siempre debe ser movimiento en sentido contrario del sensor
-    // nInterf == Movimiento NO causa interferencia
-    bool xInterf = !digitalRead(pinSX) || xDir;
-    bool yInterf = !digitalRead(pinSY) || yDir;
-    bool zInterf = !digitalRead(pinSZ) || zDir;
+    if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); return; } // Correct with function
+
+    bool xHasInterference = !digitalRead(pinSX) || xDir;
+    bool yHasInterference = !digitalRead(pinSY) || yDir;
+    bool zHasInterference = !digitalRead(pinSZ) || zDir;
     // While goal not reached and sensor is not pressed and movement doesn't cause interference
-    bool xCond = (xMov != xGoal) && (xMov < xLimit) && xInterf; 
-    bool yCond = (yMov != yGoal) && (yMov < yLimit) && yInterf;
-    bool zCond = (zMov != zGoal) && (zMov < zLimit) && zInterf;
+    bool xCond = (xMov != xGoal) && (xMov < xLimit) && xHasInterference;      // HAY QUE CAMBIAR NOMBRES 
+    bool yCond = (yMov != yGoal) && (yMov < yLimit) && yHasInterference;
+    bool zCond = (zMov != zGoal) && (zMov < zLimit) && zHasInterference;
     /*
       Con Karnaugh obtenemos:
       S: Sensor
@@ -228,19 +336,43 @@ void moveXYZ(float Sx, float Sy, float Sz)
   enableMotors(false);
 }
 
+/*
+void moveClaw(int action)
+{
+  static int open = 300;
+  static int close = 500;
+
+  if(action == 0)
+  {
+    ax12a.ledStatus(ID, ON);
+    ax12a.turn(ID, LEFT, open); 
+  }
+  else if (action == 1)
+  {
+    ax12a.ledStatus(ID, OFF);
+    ax12a.turn(ID, RIGHT, close);
+  }
+}*/
+
+int moveSystem(float x, float y, float z, int c)
+{
+  moveXYZ(x, y, z);
+  //moveClaw(c);
+}
+
 bool detectBand(int scanCycles, int scanFrequency) //TODO
 {
   // Variable definition
   bool direction = 1; // Movimiento en sentido opuesto al sensor
   int count = 0;
   // MOVER A ORIGEN EN Y
-  GoToOrigin('y');
+  goToOrigin('y');
   // Activates motors and starts
-  digitalWrite(pinMotEN, HIGH);
-  digitalWrite(pinDirY, direction);
+  enableMotors(true);
+  setAxisDirection('y', 1);
   do 
   {
-    // If stop button is pressed loop breaks (break or return)
+    // If stop button is pressed loop breaks (CHANGETO return)
     if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); break; }
     // Effector movement
     generateStep(pinStepY, scanFrequency);
@@ -250,9 +382,9 @@ bool detectBand(int scanCycles, int scanFrequency) //TODO
     else
     { yPosition -= Smy; }
     // Oscilating behaviour 
-    if(digitalRead(pinSY) == HIGH) // Sensor físico Y presionado    
+    if(axisAtOrigin('y')) // Sensor físico Y presionado    
     { direction = 1; count++; }
-    if(yPosition > yLimit)  
+    if(yPosition > yLimit)  //Hacer consigna virtual
     { direction = 0; count++; }
   } 
   while(count < scanCycles);
@@ -294,90 +426,5 @@ void detectCap(float xPos) // TODO: Finish function
   */
   return;
 }
-
-/*
-void moveClaw(int action)
-{
-  static int open = 300;
-  static int close = 500;
-
-  if(action == 0)
-  {
-    ax12a.ledStatus(ID, ON);
-    ax12a.turn(ID, LEFT, open); 
-  }
-  else if (action == 1)
-  {
-    ax12a.ledStatus(ID, OFF);
-    ax12a.turn(ID, RIGHT, close);
-  }
-}*/
-
-//-----------------------------
-//-------Debug Functions-------
-//-----------------------------
-
-void enableMotors(bool enable)
-{ // TODO: Check if correct
-  digitalWrite(pinMotEN, enable ? HIGH : LOW);
-}
-
-void generateStep(int pinStepMotor, int frequency)
-{
-  digitalWrite(pinStepMotor, HIGH);
-  delayMicroseconds(frequency);
-  digitalWrite(pinStepMotor, LOW); 
-  delayMicroseconds(frequency);
-}
-
-void waitOnStop()
-{ 
-  if(digitalRead(pinStop) == 0)
-  { 
-    enableMotors(false); 
-    while(digitalRead(pinStop) == 0) 
-    { delay(1); }
-    enableMotors(true);
-  }
-}
-
-bool exitOnStop()
-{ // TODO: Check if correct
-  if(digitalRead(pinStop) == 0) 
-  { enableMotors(false); return true; }
-  return false;
-}
-
-int returnPosition() // TODO: Hacer que se envíe una cadena
-{
-  // Creo no se puede retornar varias cosas a la vez
-  return xPosition, yPosition, zPosition;
-}
-
-void showSensors()
-{
-  Serial.print("Sensor eje X: ");
-  Serial.println(digitalRead(pinSX));
-  Serial.print("Sensor eje Y: ");
-  Serial.println(digitalRead(pinSY));
-  Serial.print("Sensor eje Z: ");
-  Serial.println(digitalRead(pinSZ));
-  Serial.print("Sensor inductivo: ");
-  Serial.println(digitalRead(pinSInd));
-  Serial.print("Sensor distancia: "); 
-  Serial.println(analogRead(pinSDist)); // Sensor analógico
-}
-
-/*
-void testClaw()
-{
-  // Moves claw periodically
-  ax12a.ledStatus(ID, ON);
-  ax12a.turn(ID, LEFT, 300); 
-  delay(5000);
-  ax12a.ledStatus(ID, OFF);
-  ax12a.turn(ID, RIGHT, 500);
-  delay(5000);
-} */
 
 void loop(){}
