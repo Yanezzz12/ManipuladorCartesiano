@@ -66,7 +66,7 @@ void setup()
   // Declaraciones adicionales
   pinMode(pinServo, OUTPUT);
   pinMode(pinStop, INPUT);
-  //Dynamixel setup
+  // Dynamixel setup
   delay(1000);  // Time for Dynamixel to start on power-up
   //ax12a.begin(BaudRate, pinServo, &Serial);
   //ax12a.setEndless(ID, ON);
@@ -79,7 +79,7 @@ void setup()
 /*TODO: 
   ROS nodes
   Capability for routines
-  Goto coords and move claw
+  Goto coords and move claw     DONE?
   IDLE function
   code optimization (static variables)
   error correction (re scan)
@@ -89,14 +89,51 @@ void setup()
   >> 
 */
 
-int MoveSystem(float x, float y, float z, int c)
+int freq = 1000;
+void goToOrigin(char axis = 'a')
 {
-  MoveXYZ(x, y, z);
-  //MoveClaw(c);
+  enableMotors(true);
+
+  // Z-Axis // TODO: Define correct direction
+  digitalWrite(pinDirZ, LOW);
+  while((digitalRead(pinSZ) != 0) && (axis == 'a' || axis == 'z'))
+  {
+    waitOnStop();
+    generateStep(pinStepZ, freq);
+  } 
+  if(digitalRead(pinSZ) == 1) // TODO: Check if sensor is active here
+  { zPosition = 0.0f; }
+
+  // XY-Axis
+  while((digitalRead(pinSX != 0)) || (digitalRead(pinSY != 0))) //Este bucle no terminará TODO!
+  {
+    waitOnStop();
+
+    // X-Axis
+    digitalWrite(pinDirX1, LOW);  digitalWrite(pinDirX2, HIGH);  
+    if(digitalRead(pinSX != 0) && (axis == 'a' || axis == 'x'))
+    { generateStep(pinStepX1, freq); generateStep(pinStepX2, freq); } 
+
+    // Y-Axis
+    digitalWrite(pinDirY, LOW);  
+    if(digitalRead(pinSY != 0) && (axis == 'a' || axis == 'y'))
+    { generateStep(pinStepY, freq); }
+  }
+  if(digitalRead(pinSX) == 1) // TODO: Check of sensor is active here
+  { xPosition = 0.0f; }
+  if(digitalRead(pinSY) == 1) // TODO: Check of sensor is active here
+  { yPosition = 0.0f; }
+
+  enableMotors(false);
 }
 
-int freq = 1000;
-void MoveXYZ(float Sx, float Sy, float Sz)
+int moveSystem(float x, float y, float z, int c)
+{
+  moveXYZ(x, y, z);
+  //moveClaw(c);
+}
+
+void moveXYZ(float Sx, float Sy, float Sz)
 {
   // Variable declaration
   bool xDir = 0;
@@ -128,12 +165,12 @@ void MoveXYZ(float Sx, float Sy, float Sz)
   { digitalWrite(pinDirZ, HIGH); zDir = 1;  } // Chech zDir validity
   else
   { digitalWrite(pinDirZ, LOW);  zDir = 0;  }
-  // Stepper motors activate and enters loop to move
-  digitalWrite(pinMotEN, HIGH);
+  
+  enableMotors(true);
   do 
   { 
-    // If stop button is pressed loop breaks (break or return)
-    if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); break; } 
+    // If stop button is pressed loop breaks 
+    if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); return; } 
     // nDir = 1 siempre debe ser movimiento en sentido contrario del sensor
     // nInterf == Movimiento NO causa interferencia
     bool xInterf = !digitalRead(pinSX) || xDir;
@@ -159,12 +196,8 @@ void MoveXYZ(float Sx, float Sy, float Sz)
     // Effector movement
     if(xCond)
     {
-      digitalWrite(pinStepX1, HIGH);
-      digitalWrite(pinStepX2, HIGH);
-      delayMicroseconds(freq);
-      digitalWrite(pinStepX1, LOW);
-      digitalWrite(pinStepX2, LOW);
-      delayMicroseconds(freq);
+      generateStep(pinStepX1, freq);
+      generateStep(pinStepX2, freq);
       xMov += Smx;
       if(xDir == 0)     //Revisar que la dirección es la correcta
       { xPosition += Smx; } 
@@ -173,7 +206,7 @@ void MoveXYZ(float Sx, float Sy, float Sz)
     }
     if(yCond)
     {
-      MoveStep(pinStepY, freq);
+      generateStep(pinStepY, freq);
       yMov += Smy;
       if(yDir == 0)     //Revisar que la dirección es la correcta
       { yPosition += Smy; }
@@ -182,7 +215,7 @@ void MoveXYZ(float Sx, float Sy, float Sz)
     }
     if(zCond)
     {
-      MoveStep(pinStepZ, freq);
+      generateStep(pinStepZ, freq);
       zMov += Smz;
       if(zDir == 0)     //Revisar que la dirección es la correcta
       { zPosition += Smz; }
@@ -191,55 +224,11 @@ void MoveXYZ(float Sx, float Sy, float Sz)
     }
   }
   while(xCond || yCond || zCond);
-  // Stepper motors deactivate
-  digitalWrite(pinMotEN, LOW);
+  
+  enableMotors(false);
 }
 
-void GoToOrigin(char axis = 'a')
-{
-  // Enables motors
-  digitalWrite(pinMotEN, HIGH);
-
-  // Z-Axis
-  digitalWrite(pinDirZ, LOW);
-  while(digitalRead(pinSZ) != 0 && (axis == 'a' || axis == 'z'))
-  {
-    while(digitalRead(pinStop) == 0) { }  // Pauses system //TODO: Check validity of sensor
-    MoveStep(pinStepZ, freq);             
-  } 
-  if(digitalRead(pinSZ) == 1) // TODO: Check if sensor is active here
-  { zPosition = 0.0f; }
-
-  // XY-Axis
-  while((digitalRead(pinSX != 0)) || (digitalRead(pinSY != 0))) 
-  {
-    while(digitalRead(pinStop) == 0) { } // Pauses system //TODO: Check validity of sensor
-    // Simultaneous movement to origin
-    digitalWrite(pinDirX1, LOW);  
-    digitalWrite(pinDirX2, HIGH);  
-    if(digitalRead(pinSX != 0) && (axis == 'a' || axis == 'x'))
-    {
-      digitalWrite(pinStepX1, HIGH);
-      digitalWrite(pinStepX2, HIGH);
-      delayMicroseconds(freq);
-      digitalWrite(pinStepX1, LOW);
-      digitalWrite(pinStepX2, LOW);
-      delayMicroseconds(freq);
-    } 
-    digitalWrite(pinDirY, LOW);  
-    if(digitalRead(pinSY != 0) && (axis == 'a' || axis == 'y'))
-    { MoveStep(pinStepY, freq); }
-  }
-  if(digitalRead(pinSX) == 1) // TODO: Check of sensor is active here
-  { xPosition = 0.0f; }
-  if(digitalRead(pinSY) == 1) // TODO: Check of sensor is active here
-  { yPosition = 0.0f; }
-
-  // Disables motors
-  digitalWrite(pinMotEN, LOW);
-}
-
-bool DetectBand(int scanCycles, int scanFrequency)
+bool detectBand(int scanCycles, int scanFrequency) //TODO
 {
   // Variable definition
   bool direction = 1; // Movimiento en sentido opuesto al sensor
@@ -254,7 +243,7 @@ bool DetectBand(int scanCycles, int scanFrequency)
     // If stop button is pressed loop breaks (break or return)
     if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); break; }
     // Effector movement
-    MoveStep(pinStepY, scanFrequency);
+    generateStep(pinStepY, scanFrequency);
     // Updates position
     if(direction == 1)
     { yPosition += Smy; }
@@ -271,7 +260,7 @@ bool DetectBand(int scanCycles, int scanFrequency)
   if(count > scanCycles) //Check if this works
   { return false; }
   // Centrar el brazo a la banda en el eje y TODO
-  MoveXYZ(0, 1, 0);
+  moveXYZ(0, 1, 0);
   return true;
 
   //TODO:
@@ -284,7 +273,7 @@ bool DetectBand(int scanCycles, int scanFrequency)
   */
 }
 
-void DetectCap(float xPos) // TODO: Finish function
+void detectCap(float xPos) // TODO: Finish function
 {
   // Static variables
   static int scanFreq = 1000;
@@ -307,7 +296,7 @@ void DetectCap(float xPos) // TODO: Finish function
 }
 
 /*
-void MoveClaw(int action)
+void moveClaw(int action)
 {
   static int open = 300;
   static int close = 500;
@@ -328,14 +317,36 @@ void MoveClaw(int action)
 //-------Debug Functions-------
 //-----------------------------
 
-void MoveStep(int pinStepMotor, int frequency)
+void enableMotors(bool enable)
+{ // TODO: Check if correct
+  digitalWrite(pinMotEN, enable ? HIGH : LOW);
+}
+
+void generateStep(int pinStepMotor, int frequency)
 {
   digitalWrite(pinStepMotor, HIGH);
   delayMicroseconds(frequency);
   digitalWrite(pinStepMotor, LOW); 
   delayMicroseconds(frequency);
 }
-      
+
+void waitOnStop()
+{ 
+  if(digitalRead(pinStop) == 0)
+  { 
+    enableMotors(false); 
+    while(digitalRead(pinStop) == 0) 
+    { delay(1); }
+    enableMotors(true);
+  }
+}
+
+bool exitOnStop()
+{ // TODO: Check if correct
+  if(digitalRead(pinStop) == 0) 
+  { enableMotors(false); return true; }
+  return false;
+}
 
 int returnPosition() // TODO: Hacer que se envíe una cadena
 {
@@ -358,7 +369,7 @@ void showSensors()
 }
 
 /*
-void TestClaw()
+void testClaw()
 {
   // Moves claw periodically
   ax12a.ledStatus(ID, ON);
