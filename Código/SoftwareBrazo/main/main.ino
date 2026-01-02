@@ -280,8 +280,8 @@ void moveXYZ(float Sx, float Sy, float Sz)
   { 
     // If stop button is pressed loop breaks 
     if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); return; } // Correct with function
-
-    bool xHasInterference = !digitalRead(pinSX) || xDir;
+    // Obtained with Karnaugh (Check notes)
+    bool xHasInterference = !axisAtOrigin('x') || xDir;
     bool yHasInterference = !digitalRead(pinSY) || yDir;
     bool zHasInterference = !digitalRead(pinSZ) || zDir;
     // While goal not reached and sensor is not pressed and movement doesn't cause interference
