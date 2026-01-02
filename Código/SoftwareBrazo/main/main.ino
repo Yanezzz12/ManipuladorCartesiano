@@ -98,6 +98,11 @@ void printError(int numError)
   Serial.print("Error "); Serial.println(numError);
 }
 
+bool stopPressed()  //TODO: Check if correct
+{
+  return !digitalRead(pinStop);
+}
+
 void enableMotors(bool enable) // TODO: Check if correct
 { 
   digitalWrite(pinMotEN, enable ? HIGH : LOW);
@@ -144,20 +149,13 @@ void generateStep(int pinStepMotor, int frequency)
 
 void waitOnStop() // TODO: Check if correct
 { 
-  if(digitalRead(pinStop) == 0)
+  if(stopPressed())
   { 
     enableMotors(false); 
     while(digitalRead(pinStop) == 0) 
     { delay(1); }
     enableMotors(true);
   }
-}
-
-bool exitOnStop() // TODO: Check if correct
-{ 
-  if(digitalRead(pinStop) == 0) 
-  { enableMotors(false); return true; }
-  return false;
 }
 
 void updatePosition(char axis, bool againstOrigin)
@@ -241,97 +239,72 @@ void goToOrigin(char axis = 'a', int originFrequency = 1000)
   enableMotors(false);
 }
 
-int freq = 1000;
-void moveXYZ(float Sx, float Sy, float Sz)
+
+void moveXYZ(float Sx, float Sy, float Sz, int frequency = 1000) // Input has to be in [mm]
 {
   // Variable declaration
-  bool xDir = 0;
-  bool yDir = 0;
-  bool zDir = 0;
-  bool xCond = 0;
-  bool yCond = 0;
-  bool zCond = 0;
+  bool xMotionAllowed = false;
+  bool yMotionAllowed = false;
+  bool zMotionAllowed = false;
+  bool xAxisMovement = false;
+  bool yAxisMovement = false;
+  bool zAxisMovement = false;
   float xMov = 0.0;
   float yMov = 0.0;
   float zMov = 0.0;
-  float xGoal = 1.0;
-  float yGoal = 1.0;
-  float zGoal = 1.0;
   // Distance to steps conversion
   int xSteps = abs(Sx) / Smx;
   int ySteps = abs(Sy) / Smy;
   int zSteps = abs(Sz) / Smz;
+  // Goal calculus
+  float xGoal = xSteps * Smx;
+  float yGoal = ySteps * Smy;
+  float zGoal = zSteps * Smz;
   // Defines direction
-  if(Sx >= 0)
-  { setAxisDirection('x', 1); xDir = 1;   } 
-  else
-  { setAxisDirection('x', 0);  xDir = 0;  }
-  if(Sy >= 0)
-  { setAxisDirection('y', 1); yDir = 1;   } 
-  else
-  { setAxisDirection('y', 0);  yDir = 0;  }
-  if(Sz >= 0)
-  { setAxisDirection('z', 1); zDir = 1;   } 
-  else
-  { setAxisDirection('z', 0);  zDir = 0;  }
-  
+  bool xMovingAgainstOrigin = Sx >= 0;
+  bool yMovingAgainstOrigin = Sy >= 0;
+  bool zMovingAgainstOrigin = Sz >= 0;
+  // Setting direction
+  setAxisDirection('x', xMovingAgainstOrigin);
+  setAxisDirection('y', yMovingAgainstOrigin);
+  setAxisDirection('z', zMovingAgainstOrigin);
+
   enableMotors(true);
   do 
   { 
-    // If stop button is pressed loop breaks 
-    if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); return; } // Correct with function
+    if(stopPressed()){ enableMotors(false); return; }
+
     // Obtained with Karnaugh (Check notes)
-    bool xHasInterference = !axisAtOrigin('x') || xDir;
-    bool yHasInterference = !digitalRead(pinSY) || yDir;
-    bool zHasInterference = !digitalRead(pinSZ) || zDir;
-    // While goal not reached and sensor is not pressed and movement doesn't cause interference
-    bool xCond = (xMov != xGoal) && (xMov < xLimit) && xHasInterference;      // HAY QUE CAMBIAR NOMBRES 
-    bool yCond = (yMov != yGoal) && (yMov < yLimit) && yHasInterference;
-    bool zCond = (zMov != zGoal) && (zMov < zLimit) && zHasInterference;
-    /*
-      Con Karnaugh obtenemos:
-      S: Sensor
-      D: Direccion
-      M: Movimiento
-      M = S' + D
-      Asumiendo que 
-      >> D = 0 es movimiento en dirección al sensor (cualquier eje)
-      >> S = 0 es sensor NO presionado
-    */
-    xGoal = xSteps * Smx;
-    yGoal = ySteps * Smy;
-    zGoal = zSteps * Smz;
+    xMotionAllowed = !axisAtOrigin('x') || xMovingAgainstOrigin;
+    yMotionAllowed = !axisAtOrigin('y') || yMovingAgainstOrigin;
+    zMotionAllowed = !axisAtOrigin('z') || zMovingAgainstOrigin;
+    // While goal not reached and sensor is not pressed and motion is allowed
+    xAxisMovement = (xMov != xGoal) && (xMov < xLimit) && xMotionAllowed;
+    yAxisMovement = (yMov != yGoal) && (yMov < yLimit) && yMotionAllowed;
+    zAxisMovement = (zMov != zGoal) && (zMov < zLimit) && zMotionAllowed;
+    
     // Effector movement
-    if(xCond)
+    if(xAxisMovement)
     {
-      generateStep(pinStepX1, freq);
-      generateStep(pinStepX2, freq);
-      xMov += Smx;
-      if(xDir == 0)     //Revisar que la dirección es la correcta
-      { xPosition += Smx; } 
-      else 
-      { xPosition -= Smx; }
+      generateStep(pinStepX1, frequency);
+      generateStep(pinStepX2, frequency);
+      xMov += Smx; 
+      updatePosition('x', xMovingAgainstOrigin);
     }
-    if(yCond)
+    if(yAxisMovement)
     {
-      generateStep(pinStepY, freq);
+      generateStep(pinStepY, frequency);
       yMov += Smy;
-      if(yDir == 0)     //Revisar que la dirección es la correcta
-      { yPosition += Smy; }
-      else 
-      { yPosition -= Smy; }
+      updatePosition('y', yMovingAgainstOrigin);
     }
-    if(zCond)
+    if(zAxisMovement)
     {
-      generateStep(pinStepZ, freq);
+      generateStep(pinStepZ, frequency);
       zMov += Smz;
-      if(zDir == 0)     //Revisar que la dirección es la correcta
-      { zPosition += Smz; }
-      else 
-      { zPosition -= Smz; }
+      updatePosition('z', zMovingAgainstOrigin);
     }
   }
-  while(xCond || yCond || zCond);
+  while(xAxisMovement || yAxisMovement || zAxisMovement);
   
   enableMotors(false);
 }
