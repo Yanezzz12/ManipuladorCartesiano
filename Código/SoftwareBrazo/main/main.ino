@@ -335,6 +335,7 @@ int moveSystem(float x, float y, float z, int c, int frequency = 1000)
 bool detectBand(int scanCycles, int scanFrequency) //TODO
 {
   // Variable declaration
+  static bool yOriginLocked = false;
   bool direction = 1; 
   int count = 0;
   //TODO:
@@ -355,10 +356,9 @@ bool detectBand(int scanCycles, int scanFrequency) //TODO
     updatePosition('y', direction);
 
     // Oscilating behaviour 
-    if(axisAtOrigin('y')) // Sensor físico Y presionado    
-    { direction = 1; count++; }
-    if(yPosition > yLimit)  //Hacer consigna virtual
-    { direction = 0; count++; }
+    if(axisAtOrigin('y') && !yOriginLocked)   { direction = 1; count++; }
+    if(yPosition > yLimit)  { direction = 0; count++; }
+    if(!axisAtOrigin('y'))  { yOriginLocked = false; }
   } 
   while(count < scanCycles);
   
