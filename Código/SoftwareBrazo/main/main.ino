@@ -10,35 +10,35 @@
 //-----------------------------
 
 // Pines Motores a Pasos
-#define pinStepX1   32 
-#define pinDirX1    33 
-#define pinStepX2   25
-#define pinDirX2    26
-#define pinStepY    19 
-#define pinDirY     21
-#define pinStepZ    22
-#define pinDirZ     23
-#define pinMotEN    27
+const int pinStepX1 = 32;
+const int pinDirX1 =  33;
+const int pinStepX2 = 25;
+const int pinDirX2 =  26;
+const int pinStepY =  19;
+const int pinDirY =   21;
+const int pinStepZ =  22;
+const int pinDirZ =   23;
+const int pinMotEN =  27;
 // Pines sensores
-#define pinSX       100
-#define pinSY       101
-#define pinSZ       102
-#define pinSInd     103
-#define pinSDist    104
+const int pinSX =     100;
+const int pinSY =     101;
+const int pinSZ =     102;
+const int pinSInd =   103;
+const int pinSDist =  104;
 // Pines adicionales
-#define pinStop     111
+const int pinStop =   111;
 // Pines servomotor
 #define pinServo    (35u)
 #define BaudRate    (1000000ul)
 #define ID          (1u)
 // Defined physic limits of every axis
-static float xLimit = 18.0;
-static float yLimit = 22.0;
-static float zLimit = 30.0;
+const float xLimit = 18.0;
+const float yLimit = 22.0;
+const float zLimit = 30.0;
 // Minimum distance per step
-static float Smx = 0.1885;
-static float Smy = 0.1885;
-static float Smz = 0.04;
+const float Smx = 0.1885;
+const float Smy = 0.1885;
+const float Smz = 0.04;
 // Global variables
 float xPosition = 0.0f;
 float yPosition = 0.0f;
@@ -240,7 +240,7 @@ void goToOrigin(char axis = 'a', int originFrequency = 1000)
 }
 
 
-void moveXYZ(float Sx, float Sy, float Sz, int frequency = 1000) // Input has to be in [mm]
+void moveXYZ(float Sx, float Sy, float Sz, int frequency = 1000) // Input in [mm]
 {
   // Variable declaration
   bool xMotionAllowed = false;
@@ -249,9 +249,9 @@ void moveXYZ(float Sx, float Sy, float Sz, int frequency = 1000) // Input has to
   bool xAxisMovement = false;
   bool yAxisMovement = false;
   bool zAxisMovement = false;
-  float xMov = 0.0;
-  float yMov = 0.0;
-  float zMov = 0.0;
+  float xDisplacement = 0.0f;
+  float yDisplacement = 0.0f;
+  float zDisplacement = 0.0f;
   // Distance to steps conversion
   int xSteps = abs(Sx) / Smx;
   int ySteps = abs(Sy) / Smy;
@@ -278,30 +278,29 @@ void moveXYZ(float Sx, float Sy, float Sz, int frequency = 1000) // Input has to
     xMotionAllowed = !axisAtOrigin('x') || xMovingAgainstOrigin;
     yMotionAllowed = !axisAtOrigin('y') || yMovingAgainstOrigin;
     zMotionAllowed = !axisAtOrigin('z') || zMovingAgainstOrigin;
-    // While goal not reached and sensor is not pressed and motion is allowed
-    xAxisMovement = (xMov != xGoal) && (xMov < xLimit) && xMotionAllowed;
-    yAxisMovement = (yMov != yGoal) && (yMov < yLimit) && yMotionAllowed;
-    zAxisMovement = (zMov != zGoal) && (zMov < zLimit) && zMotionAllowed;
     
-    // Effector movement
+    xAxisMovement = (xDisplacement != xGoal) && (xPosition < xLimit) && xMotionAllowed;
+    yAxisMovement = (yDisplacement != yGoal) && (yPosition < yLimit) && yMotionAllowed;
+    zAxisMovement = (zDisplacement != zGoal) && (zPosition < zLimit) && zMotionAllowed;
+    
     if(xAxisMovement)
     {
       generateStep(pinStepX1, frequency);
-      generateStep(pinStepX2, frequency);
-      xMov += Smx; 
+      generateStep(pinStepX2, frequency); 
       updatePosition('x', xMovingAgainstOrigin);
+      xDisplacement += Smx;
     }
     if(yAxisMovement)
     {
       generateStep(pinStepY, frequency);
-      yMov += Smy;
       updatePosition('y', yMovingAgainstOrigin);
+      yDisplacement += Smy;
     }
     if(zAxisMovement)
     {
       generateStep(pinStepZ, frequency);
-      zMov += Smz;
       updatePosition('z', zMovingAgainstOrigin);
+      zDisplacement += Smz;
     }
   }
   while(xAxisMovement || yAxisMovement || zAxisMovement);
@@ -327,33 +326,34 @@ void moveClaw(int action)
   }
 }*/
 
-int moveSystem(float x, float y, float z, int c)
+int moveSystem(float x, float y, float z, int c, int frequency = 1000)
 {
-  moveXYZ(x, y, z);
+  moveXYZ(x, y, z, frequency);
   //moveClaw(c);
 }
 
 bool detectBand(int scanCycles, int scanFrequency) //TODO
 {
-  // Variable definition
-  bool direction = 1; // Movimiento en sentido opuesto al sensor
+  // Variable declaration
+  bool direction = 1; 
   int count = 0;
-  // MOVER A ORIGEN EN Y
+  //TODO:
+  /*
+    Función para detectar bordes de banda
+    Si se detecta la banda, calcular centro y posicionarse
+  */
+
   goToOrigin('y');
-  // Activates motors and starts
+  setAxisDirection('y', direction);
+  
   enableMotors(true);
-  setAxisDirection('y', 1);
   do 
   {
-    // If stop button is pressed loop breaks (CHANGETO return)
-    if(digitalRead(pinStop) == 0){ digitalWrite(pinMotEN, LOW); break; }
-    // Effector movement
+    if(stopPressed()){ enableMotors(false); return false; }
+    
     generateStep(pinStepY, scanFrequency);
-    // Updates position
-    if(direction == 1)
-    { yPosition += Smy; }
-    else
-    { yPosition -= Smy; }
+    updatePosition('y', direction);
+
     // Oscilating behaviour 
     if(axisAtOrigin('y')) // Sensor físico Y presionado    
     { direction = 1; count++; }
@@ -361,21 +361,13 @@ bool detectBand(int scanCycles, int scanFrequency) //TODO
     { direction = 0; count++; }
   } 
   while(count < scanCycles);
+  
   // Returns false if doesn't find band
-  if(count > scanCycles) //Check if this works
+  if(count > scanCycles) // Check 
   { return false; }
-  // Centrar el brazo a la banda en el eje y TODO
-  moveXYZ(0, 1, 0);
-  return true;
 
-  //TODO:
-  /*
-    Declarar limite en y
-    Función para detectar banda
-    Si no se detecta, repetir 2 veces más, (3 búsquedas en total)
-    Si nunca se detecta entonces el proceso no continúa
-    Si se detecta la banda, calcular centro y posicionarse
-  */
+  moveXYZ(0, 1, 0); //TODO: Calculate center
+  return true;
 }
 
 void detectCap(float xPos) // TODO: Finish function
