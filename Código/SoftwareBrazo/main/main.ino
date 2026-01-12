@@ -332,35 +332,60 @@ int moveSystem(float x, float y, float z, int c, int frequency = 1000)
   //moveClaw(c);
 }
 
+bool smartDirectionSwitch(char smartAxis, int maxSwitch)
+{ 
+  //TODO: Quitar count++ y ver cómo colocarlo mejor ()
+  static bool axisOriginLocked = false;
+  static bool smartDirection = false;
+  int count = 0;
+
+  if(axisAtOrigin(smartAxis) && !axisOriginLocked) { smartDirection = 1; count++; }
+  if(!axisAtOrigin(smartAxis)) { axisOriginLocked = false; }
+  switch(smartAxis) 
+  {
+    case 'x':
+      if(xPosition > xLimit)  { smartDirection = 0; count++; }
+      break;
+    case 'y':
+      if(yPosition > yLimit)  { smartDirection = 0; count++; }
+      break;
+    case 'z':
+      if(zPosition > zLimit)  { smartDirection = 0; count++; }
+      break;
+  }
+  setAxisDirection(smartAxis, smartDirection);
+
+
+
+
+
+  // Oscilating behaviour 
+  if(axisAtOrigin('y') && !yOriginLocked)   { direction = 1; count++; }
+  if(yPosition > yLimit)  { direction = 0; count++; }
+  if(!axisAtOrigin('y'))  { yOriginLocked = false; }
+}
+
+
 bool detectBand(int scanCycles, int scanFrequency) //TODO
 {
   // Variable declaration
   static bool yOriginLocked = false;
   bool direction = 1; 
   int count = 0;
-  //TODO:
-  /*
-    Función para detectar bordes de banda
-    Si se detecta la banda, calcular centro y posicionarse
-  */
 
   goToOrigin('y');
   setAxisDirection('y', direction);
-  
   enableMotors(true);
+
   do 
   {
     if(stopPressed()){ enableMotors(false); return false; }
     
     generateStep(pinStepY, scanFrequency);
     updatePosition('y', direction);
-
-    // Oscilating behaviour 
-    if(axisAtOrigin('y') && !yOriginLocked)   { direction = 1; count++; }
-    if(yPosition > yLimit)  { direction = 0; count++; }
-    if(!axisAtOrigin('y'))  { yOriginLocked = false; }
+    smartDirectionSwitch('y', scanCycles);
   } 
-  while(count < scanCycles);
+  while(count < scanCycles || false);
   
   // Returns false if doesn't find band
   if(count > scanCycles) // Check 
@@ -368,6 +393,12 @@ bool detectBand(int scanCycles, int scanFrequency) //TODO
 
   moveXYZ(0, 1, 0); //TODO: Calculate center
   return true;
+
+  //TODO:
+  /*
+    Función para detectar bordes de banda
+    Si se detecta la banda, calcular centro y posicionarse
+  */
 }
 
 void detectCap(float xPos) // TODO: Finish function
