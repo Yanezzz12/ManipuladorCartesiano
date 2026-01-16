@@ -383,9 +383,9 @@ bool detectBand(int scanCycles, int scanFrequency) //TODO
     
     generateStep(pinStepY, scanFrequency);
     updatePosition('y', direction);
-    smartDirectionSwitch('y', scanCycles);
+    smartDirectionSwitch('y', scanCycles); //Cambia dirección si llega a límites
   } 
-  while(count < scanCycles || false);
+  while(count < scanCycles || false); //Se ejecuta Si oscila y no encuentra nada o si encuentra algo (Plantear)
   
   // Returns false if doesn't find band
   if(count > scanCycles) // Check 
