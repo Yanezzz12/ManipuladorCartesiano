@@ -332,37 +332,88 @@ int moveSystem(float x, float y, float z, int c, int frequency = 1000)
   //moveClaw(c);
 }
 
-bool smartDirectionSwitch(char smartAxis, int maxSwitch)
+bool oscillateAxis(char axis, int maxSwitch, int frequency)
 { 
-  //TODO: Quitar count++ y ver cómo colocarlo mejor ()
+  static int counter = 0;
+  static bool direction = false;
   static bool axisOriginLocked = false;
-  static bool smartDirection = false;
-  int count = 0;
+  bool virtualSensorReached = false;
 
-  if(axisAtOrigin(smartAxis) && !axisOriginLocked) { smartDirection = 1; count++; }
-  if(!axisAtOrigin(smartAxis)) { axisOriginLocked = false; }
-  switch(smartAxis) 
+  switch(axis)
   {
     case 'x':
-      if(xPosition > xLimit)  { smartDirection = 0; count++; }
+      virtualSensorReached = xPosition > xLimit; 
+      generateStep(pinStepX1, frequency);
+      generateStep(pinStepX2, frequency);
       break;
-    case 'y':
-      if(yPosition > yLimit)  { smartDirection = 0; count++; }
+    case 'y': 
+      virtualSensorReached = yPosition > yLimit; 
+      generateStep(pinStepY, frequency);
       break;
-    case 'z':
-      if(zPosition > zLimit)  { smartDirection = 0; count++; }
+    case 'z': 
+      virtualSensorReached = zPosition > zLimit;
+      generateStep(pinStepZ, frequency);
+      break;
+    default: 
+      printError(101);                     
       break;
   }
-  setAxisDirection(smartAxis, smartDirection);
+  updatePosition(axis, direction);
+
+  if(!axisOriginLocked(axis)){ axisOriginLocked = false; }
+  if(axisAtOrigin(axis) && !axisOriginLocked) { setAxisDirection(axis, HIGH); counter++; }
+  if(virtualSensorReached)                    { setAxisDirection(axis, LOW); counter++; }
+
+  if(counter == maxSwitch)
+  { 
+    counter = 0;
+    return false; 
+  }
 
 
+  return true;
 
 
+  /*
+    oscillateAxis -> false: oscila
+    oscillateAxis -> true: continua oscilando ???
+  */
 
   // Oscilating behaviour 
   if(axisAtOrigin('y') && !yOriginLocked)   { direction = 1; count++; }
   if(yPosition > yLimit)  { direction = 0; count++; }
   if(!axisAtOrigin('y'))  { yOriginLocked = false; }
+
+  /* TODO:
+    Emulate axisOriginLocked
+    Emulate switch
+
+    Note: 
+    axisOriginLocked = !axisAtOrigin(axis) ? true;
+  */
+
+  /*
+    Estructura LOOP de detectBand()
+    goToOrigin('x');
+    do
+    {
+      if(stopPressed()){ enableMotors(enable); return false; }
+
+      generateStep();
+      updatePosition('y', direction)
+
+      // Banda detectada
+      if(detectBand() > 1)
+      {
+        // Se posiciona al centro de la banda
+        MoveXYZ(0,0,0);
+        return true;
+      }
+    }
+    while(oscillateAxis('y', 3));
+    // Retorna falso porque no encontró banda
+    return false;
+  */
 }
 
 
@@ -385,7 +436,7 @@ bool detectBand(int scanCycles, int scanFrequency) //TODO
     updatePosition('y', direction);
     smartDirectionSwitch('y', scanCycles); //Cambia dirección si llega a límites
   } 
-  while(count < scanCycles || false); //Se ejecuta Si oscila y no encuentra nada o si encuentra algo (Plantear)
+  while(oscillateAxis('y', 3, scanFrequency)); //Se ejecuta Si oscila y no encuentra nada o si encuentra algo (Plantear)
   
   // Returns false if doesn't find band
   if(count > scanCycles) // Check 
