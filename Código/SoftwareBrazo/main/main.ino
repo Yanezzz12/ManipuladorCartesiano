@@ -332,66 +332,91 @@ int moveSystem(float x, float y, float z, int c, int frequency = 1000)
   //moveClaw(c);
 }
 
-bool oscillateAxis(char axis, int maxSwitch, int frequency)
+bool oscillateAxis(char axis, int maxSwitch, int frequency = 1000)
 { 
   static int counter = 0;
-  static bool direction = false;
+  static bool direction = 1; // 0: towards origin, 1: against origin
   static bool axisOriginLocked = false;
   bool virtualSensorReached = false;
 
+  // Changes direction if a sensor is reached
+  if(virtualSensorReached)  // Sensor S2
+  { direction = 0; counter++; }
+  if(axisAtOrigin(axis))    // Sensor S1
+  { direction = 1; counter++; }
+  setAxisDirection(axis, direction);
+
+  // Generate step, check virtual sensor and update position
   switch(axis)
   {
     case 'x':
-      virtualSensorReached = xPosition > xLimit; 
       generateStep(pinStepX1, frequency);
       generateStep(pinStepX2, frequency);
+      virtualSensorReached = xPosition > xLimit; 
       break;
-    case 'y': 
-      virtualSensorReached = yPosition > yLimit; 
+    case 'y':
       generateStep(pinStepY, frequency);
+      virtualSensorReached = yPosition > yLimit; 
       break;
-    case 'z': 
-      virtualSensorReached = zPosition > zLimit;
+    case 'z':
       generateStep(pinStepZ, frequency);
+      virtualSensorReached = zPosition > zLimit;
       break;
-    default: 
-      printError(101);                     
+    default:
+      printError(100);                     
       break;
   }
   updatePosition(axis, direction);
 
-  if(!axisOriginLocked(axis)){ axisOriginLocked = false; }
-  if(axisAtOrigin(axis) && !axisOriginLocked) { setAxisDirection(axis, HIGH); counter++; }
-  if(virtualSensorReached)                    { setAxisDirection(axis, LOW); counter++; }
+  // If maximum number of switches has been reached, returns false
+  if(counter == maxSwitch) 
+  { counter = 0; return false; }
 
-  if(counter == maxSwitch)
-  { 
-    counter = 0;
-    return false; 
-  }
-
-
+  // Else, returns true and keeps oscillating
   return true;
-
-
-  /*
+}
+/* 
+  TODO:
+    No olvidar añadir axisOriginLocked
+  NOTA:
     oscillateAxis -> false: oscila
     oscillateAxis -> true: continua oscilando ???
-  */
-
-  // Oscilating behaviour 
-  if(axisAtOrigin('y') && !yOriginLocked)   { direction = 1; count++; }
-  if(yPosition > yLimit)  { direction = 0; count++; }
-  if(!axisAtOrigin('y'))  { yOriginLocked = false; }
-
-  /* TODO:
-    Emulate axisOriginLocked
-    Emulate switch
-
-    Note: 
     axisOriginLocked = !axisAtOrigin(axis) ? true;
-  */
+*/
 
+bool detectBand(int scanCycles, int scanFrequency) //TODO
+{
+  // Variable declaration
+  static bool yOriginLocked = false;
+  bool direction = 1; 
+  int count = 0;
+
+  goToOrigin('y');
+  setAxisDirection('y', direction);
+  enableMotors(true);
+
+  do 
+  {
+    if(stopPressed()){ enableMotors(false); return false; }
+
+    // Esto lo debe hacer la función de oscilación
+    generateStep(pinStepY, scanFrequency);
+    updatePosition('y', direction);
+  } 
+  while(oscillateAxis('y', 3, scanFrequency)); //Se ejecuta Si oscila y no encuentra nada o si encuentra algo (Plantear)
+  
+  // Returns false if doesn't find band
+  if(count > scanCycles) // Check 
+  { return false; }
+
+  moveXYZ(0, 1, 0); //TODO: Calculate center
+  return true;
+
+  //TODO:
+  /*
+    Función para detectar bordes de banda
+    Si se detecta la banda, calcular centro y posicionarse
+  */
   /*
     Estructura LOOP de detectBand()
     goToOrigin('x');
@@ -413,42 +438,6 @@ bool oscillateAxis(char axis, int maxSwitch, int frequency)
     while(oscillateAxis('y', 3));
     // Retorna falso porque no encontró banda
     return false;
-  */
-}
-
-
-bool detectBand(int scanCycles, int scanFrequency) //TODO
-{
-  // Variable declaration
-  static bool yOriginLocked = false;
-  bool direction = 1; 
-  int count = 0;
-
-  goToOrigin('y');
-  setAxisDirection('y', direction);
-  enableMotors(true);
-
-  do 
-  {
-    if(stopPressed()){ enableMotors(false); return false; }
-    
-    generateStep(pinStepY, scanFrequency);
-    updatePosition('y', direction);
-    smartDirectionSwitch('y', scanCycles); //Cambia dirección si llega a límites
-  } 
-  while(oscillateAxis('y', 3, scanFrequency)); //Se ejecuta Si oscila y no encuentra nada o si encuentra algo (Plantear)
-  
-  // Returns false if doesn't find band
-  if(count > scanCycles) // Check 
-  { return false; }
-
-  moveXYZ(0, 1, 0); //TODO: Calculate center
-  return true;
-
-  //TODO:
-  /*
-    Función para detectar bordes de banda
-    Si se detecta la banda, calcular centro y posicionarse
   */
 }
 
