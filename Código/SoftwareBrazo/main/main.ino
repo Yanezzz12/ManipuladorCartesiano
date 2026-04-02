@@ -384,12 +384,28 @@ bool oscillateAxis(char axis, int maxSwitch, int frequency = 1000)
     axisOriginLocked = !axisAtOrigin(axis) ? true;
 */
 
+bool detectBand()
+{
+  static 
+  
+  digitalRead(uint8_t pin);
+
+  
+
+
+
+
+}
+
 bool detectBand(int scanCycles, int scanFrequency) //TODO
 {
   // Variable declaration
   static bool yOriginLocked = false;
   bool direction = 1; 
   int count = 0;
+
+  // Prueba
+  static bool val = 0;
 
   goToOrigin('y');
   setAxisDirection('y', direction);
@@ -399,11 +415,14 @@ bool detectBand(int scanCycles, int scanFrequency) //TODO
   {
     if(stopPressed()){ enableMotors(false); return false; }
 
-    // Esto lo debe hacer la función de oscilación
-    generateStep(pinStepY, scanFrequency);
-    updatePosition('y', direction);
+    if(detectBand()) // Lo mismo que digitalRead(pinSInd)
+    { return true; }
+
+    // If band detected, move to 
+    if(digitalRead(pinSInd)){ val++; }
+    if(val > 1){  MoveXYZ(0, 0, 0); val = 0; break; } // Move to anchoBanda/2 (CheckUnits)
   } 
-  while(oscillateAxis('y', 3, scanFrequency)); //Se ejecuta Si oscila y no encuentra nada o si encuentra algo (Plantear)
+  while(oscillateAxis('y', 3, scanFrequency)); // Se ejecuta si oscila y no encuentra nada o si encuentra algo (Plantear)
   
   // Returns false if doesn't find band
   if(count > scanCycles) // Check 
@@ -411,6 +430,11 @@ bool detectBand(int scanCycles, int scanFrequency) //TODO
 
   moveXYZ(0, 1, 0); //TODO: Calculate center
   return true;
+}
+
+
+
+
 
   //TODO:
   /*
@@ -439,7 +463,6 @@ bool detectBand(int scanCycles, int scanFrequency) //TODO
     // Retorna falso porque no encontró banda
     return false;
   */
-}
 
 void detectCap(float xPos) // TODO: Finish function
 {
